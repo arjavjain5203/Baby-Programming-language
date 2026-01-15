@@ -15,20 +15,40 @@ enum class TokenType { //defining different token types for my language
 struct Token //defining a token structure
 {
     TokenType type; 
-    std::optional<std::string> value; //optional value for tokens like int_lit
+    std::optional<std::string> value {}; //optional value for tokens like int_lit
 };
 
 
 std::vector<Token> tokenize(const std::string& input)
 {
-    std::vector<char> buf = {}; //buffer to hold characters for multi-character tokens
+    std::string buf; //buffer to hold characters for multi-character tokens
     std::vector<Token> tokens;
     for(int i=0;i<input.size();i++)
     {
         char c = input[i];
         if(std::isalpha(c))
         {
-            
+            buf.push_back(c);
+            i++;
+            while(std::isalpha(input[i]))
+            {
+                buf.push_back(input[i]);
+                i++;
+            }
+            i--;
+
+            if(buf=="return")
+            {
+                tokens.push_back({.type=TokenType::_return});
+                buf.clear();
+                continue;
+            }
+            else
+            {
+                std::cerr<<"you messed up"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
+
         }
     }
     return tokens;
