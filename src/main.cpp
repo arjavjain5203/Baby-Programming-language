@@ -21,6 +21,7 @@ struct Token //defining a token structure
 
 std::vector<Token> tokenize(const std::string& input)
 {
+    std::vector<char> buf = {}; //buffer to hold characters for multi-character tokens
     std::vector<Token> tokens;
     for(int i=0;i<input.size();i++)
     {

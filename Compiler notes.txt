@@ -8,7 +8,8 @@ code -> (compiler)-> Assembly ->(assembler) -> object file ->(linker) combine li
 ## NASM for assembler and GNU linker for linker 
 
 
-## to run everything
+## to build the compiler
+
 arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ cmake --build build/
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
@@ -24,8 +25,11 @@ arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ ./build/baby
 you enter wrong less number of arguments
 baby <input.by>
 
-or i can use the shell scripting 
-./run.sh main.py
 
+
+
+
+Tokenaizer 
+it parse the input into the tokens
 
 

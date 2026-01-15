@@ -5,4 +5,3 @@ project(Baby) # name of the project
 set(CMAKE_CXX_STANDARD 20) # set the C++ standard to use
 
 add_executable(baby ../src/main.cpp) # create executable from source
-install(TARGETS baby DESTINATION /usr/local/bin)
