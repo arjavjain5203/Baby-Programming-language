@@ -1,0 +1,31 @@
+Compiler notes
+
+compiler is like a translater 
+it convert the code into assembly
+
+code -> (compiler)-> Assembly ->(assembler) -> object file ->(linker) combine libraries with the object code-> executable
+
+## NASM for assembler and GNU linker for linker 
+
+
+## to run everything
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ cmake --build build/
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/arjav-jain/Coding/baby/build
+[ 50%] Building CXX object CMakeFiles/baby.dir/src/main.cpp.o
+[100%] Linking CXX executable baby
+[100%] Built target baby
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ cmake -S . -B build/
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/arjav-jain/Coding/baby/build
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ ./build/baby
+you enter wrong less number of arguments
+baby <input.by>
+
+or i can use the shell scripting 
+./run.sh main.py
+
+
+
