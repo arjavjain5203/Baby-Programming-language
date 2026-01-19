@@ -5,55 +5,10 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-enum class TokenType { //defining different token types for my language
-    _return,
-    int_lit,
-    semi
-};
-
-struct Token //defining a token structure
-{
-    TokenType type; 
-    std::optional<std::string> value {}; //optional value for tokens like int_lit
-};
-
-
-std::vector<Token> tokenize(const std::string& input)
-{
-    std::string buf; //buffer to hold characters for multi-character tokens
-    std::vector<Token> tokens;
-    for(int i=0;i<input.size();i++)
-    {
-        char c = input[i];
-        if(std::isalpha(c))
-        {
-            buf.push_back(c);
-            i++;
-            while(std::isalpha(input[i]))
-            {
-                buf.push_back(input[i]);
-                i++;
-            }
-            i--;
-
-            if(buf=="return")
-            {
-                tokens.push_back({.type=TokenType::_return});
-                buf.clear();
-                continue;
-            }
-            else
-            {
-                std::cerr<<"you messed up"<<std::endl;
-                exit(EXIT_FAILURE);
-            }
-
-        }
-    }
-    return tokens;
-}
-
+#include "types.hpp"
+#include "tokenizer.hpp"
+#include "parser.hpp"
+#include "generation.hpp"
 
 
 int main(int argc, char* argv[]) { //args tells the total size of command line arguments & argv is an array of character pointers listing all the arguments
@@ -71,8 +26,28 @@ int main(int argc, char* argv[]) { //args tells the total size of command line a
         contents_stream << input.rdbuf(); //reading file contents into string stream
         contents = contents_stream.str(); //converting string stream to string
     }
-    
-    std::cout<<"run";
+    Tokenizer tokenizer(std::move(contents));
+    std::vector<Token> things=tokenizer.tokenize(); //tokenizing the input source code
 
-    return 0;
+    Parser parser(std::move(things));
+    std::optional<Nodeexit> tree = parser.parse();
+    if(!tree.has_value())
+    {
+        std::cerr<<"Parsing failed due to syntax error"<<std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+    Generator generator(tree.value()   );
+    {
+        std::fstream output("out.asm", std::ios::out); //opening output file in write mode
+        output<<generator.generate(); //writing generated assembly code to output file
+    }
+
+
+    system("nasm -felf64 out.asm"); //assembling the generated assembly code into an object file
+    system("ld out.o -o out"); //linking the object file to create an executable
+
+
+    return EXIT_SUCCESS;
 }

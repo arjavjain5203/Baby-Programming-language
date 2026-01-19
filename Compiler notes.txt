@@ -24,8 +24,13 @@ arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ cmake -S . -B build/
 arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ ./build/baby
 you enter wrong less number of arguments
 baby <input.by>
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ ./build/baby temp.by //it genrates the assembly code, object file and executable only
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ ./out // it runs the executable file
+arjav-jain@arjav-jain-Inspiron-15-3520:~/Coding/baby$ echo $? // it shows the exit code of the executable file
 
 
+
+Tokenaizer->parsing->code creation
 
 
 
@@ -33,3 +38,8 @@ Tokenaizer
 it parse the input into the tokens
 
 
+parsing   (parse tree)
+it analyse the token sequence to determine its grammatical structure with respect to a given formal grammar 
+
+
+code creation
