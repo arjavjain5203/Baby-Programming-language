@@ -19,12 +19,12 @@ public:
         std::string buf; //buffer to hold characters for multi-character tokens
         std::vector<Token> tokens;
 
-        while(peak().has_value())
+        while(peek().has_value())
         {
-            if(std::isalpha(peak().value()))
+            if(std::isalpha(peek().value()))
             {
                 buf.push_back(consume());
-                while(peak().has_value() && std::isalnum(peak().value()))
+                while(peek().has_value() && std::isalnum(peek().value()))
                 {
                     buf.push_back(consume());
                 }
@@ -34,16 +34,24 @@ public:
                     buf.clear();
                     continue;
                 }
+                else if(buf=="hope")
+                {
+                    tokens.push_back({.type=TokenType::hope});
+                    buf.clear();
+                    continue;
+                }
                 else
                 {
-                    std::cerr<<"you sucks! "<<std::endl;
-                    exit(EXIT_FAILURE);
+                    tokens.push_back({.type=TokenType::ident,.value=buf});
+                    buf.clear();
+                    continue;
                 }
             }
-            else if(std::isdigit(peak().value()))
+
+            else if(std::isdigit(peek().value()))
             {
                 buf.push_back(consume());
-                while(peak().has_value() && std::isdigit(peak().value()))
+                while(peek().has_value() && std::isdigit(peek().value()))
                 {
                     buf.push_back(consume());
                 }
@@ -51,20 +59,38 @@ public:
                 buf.clear();
                 continue;
             }
-            else if(peak().value()==';')
+            else if(peek().value()=='(')
+            {
+                consume();
+                tokens.push_back({.type=TokenType::open_paren});
+                continue;
+            }
+            else if(peek().value()==')')
+            {
+                consume();
+                tokens.push_back({.type=TokenType::close_paren});
+                continue;
+            }
+            else if(peek().value()==';')
             {
                 consume();
                 tokens.push_back({.type=TokenType::semi});
                 continue;
             }
-            else if(std::isspace(peak().value()))
+            else if(peek().value()=='=')
+            {
+                consume();
+                tokens.push_back({.type=TokenType::eq});
+                continue;
+            }
+            else if(std::isspace(peek().value()))
             {           
                 consume();
                 continue;
             }
             else
             {
-                std::cerr<<"you sucks! "<<std::endl;
+                std::cerr<<"you sucks! Unexpected character: '" << peek().value() << "' (ASCII: " << (int)peek().value() << ")"<<std::endl;
                 exit(EXIT_FAILURE);
             }
         }
@@ -72,15 +98,15 @@ public:
     }
 private:
 
-    [[nodiscard]] inline std::optional<char> peak(int ahead=1) const //nodiscard : to indicate the return value should not be ignored
+    [[nodiscard]] inline std::optional<char> peek(int offset=0) const //nodiscard : to indicate the return value should not be ignored
     {
-        if(position+ahead > source.size())
+        if(position+offset >= source.size())
         {
             return {};
         }
         else
         {
-            return source[position];
+            return source[position+offset];
         }
     }
 

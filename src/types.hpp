@@ -6,7 +6,12 @@
 enum class TokenType {
     bye,
     int_lit,
-    semi
+    semi,
+    open_paren,
+    close_paren,
+    ident,
+    hope,
+    eq
 };
 
 struct Token {

@@ -30,18 +30,18 @@ int main(int argc, char* argv[]) { //args tells the total size of command line a
     std::vector<Token> things=tokenizer.tokenize(); //tokenizing the input source code
 
     Parser parser(std::move(things));
-    std::optional<Nodeexit> tree = parser.parse();
-    if(!tree.has_value())
+    std::optional<NodeProgram> prog = parser.parse_prog();
+    if(!prog.has_value())
     {
         std::cerr<<"Parsing failed due to syntax error"<<std::endl;
         return EXIT_FAILURE;
     }
 
 
-    Generator generator(tree.value()   );
+    Generator generator(prog.value()); 
     {
         std::fstream output("out.asm", std::ios::out); //opening output file in write mode
-        output<<generator.generate(); //writing generated assembly code to output file
+        output<<generator.gen_program(); //writing generated assembly code to output file
     }
 
 

@@ -43,3 +43,8 @@ it analyse the token sequence to determine its grammatical structure with respec
 
 
 code creation
+
+
+
+## adding variables
+
