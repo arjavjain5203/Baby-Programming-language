@@ -46,5 +46,9 @@ code creation
 
 
 
-## adding variables
+## arena allocator
+it is a memory allocation technique that allocates a large block of memory at once and then doles out smaller chunks of that block as needed. 
+This approach can be more efficient than traditional memory allocation methods, especially in scenarios where many small allocations and deallocations are required.       
+
+
 

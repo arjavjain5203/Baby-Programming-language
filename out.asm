@@ -1,11 +1,35 @@
 global _start
 _start:
-    mov rax, 99
+    mov rax, 1
     push rax
-    mov rax, 88
+    mov rax, 3
     push rax
-    push QWORD [rsp + 8]
-
+    mov rax, 2
+    push rax
+    pop rbx
+    pop rax
+    mul rbx
+    push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+    push rax
+    mov rax, 8
+    push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+    push rax
+    mov rax, 2
+    push rax
+    mov rax, QWORD [rsp + 8]
+    push rax
+    pop rbx
+    pop rax
+    mul rbx
+    push rax
+    mov rax, QWORD [rsp + 0]
+    push rax
     mov rax, 60
     pop rdi
     syscall

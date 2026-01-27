@@ -3,7 +3,7 @@
 #include "tokenizer.hpp"
 #include <sstream>
 #include <unordered_map>
-
+#include <cassert>
 
 class Generator{
     private:
@@ -24,65 +24,108 @@ class Generator{
             m_stack_size--;
         }
 
+
+
     public:
-        inline explicit Generator(NodeProgram prog) : m_prog(std::move(prog)) {
+        inline explicit Generator(const NodeProgram& prog) : m_prog(std::move(prog)) {
         }   
 
-        void gen_expr(const NodeExpr& expr) {
-            
-            struct ExprVisitor{
-                Generator* gen;
-
-                void operator()(const NodeExprIntLit& expr_int_lit){
-                    gen->asm_code << "    mov rax, " << expr_int_lit.int_lit.value.value() << "\n";
+        void gen_term(const NodeTerm* term)
+        {
+            struct TermVisitor{
+                Generator*gen;
+                void operator()(const NodeTermIntLit* int_lit){
+                    
+                    gen->asm_code << "    mov rax, " << int_lit->int_lit.value.value() << "\n";
                     gen->push("rax");
                 }
 
-                void operator()(const NodeExprIdent& expr_ident){
-                    if(gen->m_vars.find(expr_ident.ident.value.value()) == gen->m_vars.end())
-                    {
-                        std::cerr<<"Undeclared variable: " << expr_ident.ident.value.value() <<std::endl;
+                void operator()(const NodeTermIdent* ident){
+                    if(gen->m_vars.find(ident->ident.value.value()) == gen->m_vars.end()) {
+                        std::cerr<<"Undeclared variable: " << ident->ident.value.value() <<std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    const auto& var = gen->m_vars.at(expr_ident.ident.value.value());
-                    std::stringstream offset;
-                    offset << "QWORD [rsp + " << (gen->m_stack_size - var.stack_loc - 1)*8 << "]\n";
-                    gen->push(offset.str());
+                    const auto& var = gen->m_vars.at(ident->ident.value.value());
+                    gen->asm_code << "    mov rax, QWORD [rsp + " << (gen->m_stack_size - var.stack_loc - 1)*8 << "]\n";
+                    gen->push("rax");
+                }
+            };
 
+            TermVisitor visitor({.gen=this});
+            std::visit(visitor, term->var);
+            
+        }
+
+        void gen_bin_expr(const NodeBinExpr* bin_expr)
+        {
+            struct BinExprVisitor{
+                Generator* gen;
+                void operator()(const NodeBinExprAdd* add) const{
+                    gen->gen_expr(add->left);
+                    gen->gen_expr(add->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    add rax, rbx\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprMulti* multi) const{
+                    gen->gen_expr(multi->left);
+                    gen->gen_expr(multi->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    mul rbx\n";
+                    gen->push("rax");
                 }
 
             };
-            ExprVisitor visitor{.gen=this};
-            std::visit(visitor, expr.var);
+
+            BinExprVisitor visitor{.gen=this};
+            std::visit(visitor, bin_expr->var);
 
         }
 
 
 
+
+        void gen_expr(const NodeExpr* expr) {
+            
+            struct ExprVisitor{
+                Generator* gen;
+
+                void operator()(NodeTerm* term)const{
+                    gen->gen_term(term);
+                }
+                void operator()(NodeBinExpr* bin_exp) const{
+                    gen->gen_bin_expr(bin_exp);
+                }
+
+            };
+            ExprVisitor visitor{.gen=this};
+            std::visit(visitor, expr->var);
+
+        }
         void gen_stmt(const NodeStmt& stmt) {
 
             struct StmtVisitor{
                 Generator* gen;
                 
-                void operator()(const NodeStmtExit& stmt_exit) const
+                void operator()(NodeStmtExit* stmt_exit) const
                 {
-                    gen->gen_expr(stmt_exit.expr);
+                    gen->gen_expr(stmt_exit->expr);
                     gen->asm_code << "    mov rax, 60\n";
                     gen->pop("rdi");
                     gen->asm_code << "    syscall\n";
                 }
-                void operator()(const NodeStmtHope& stmt_hope)
+                void operator()(NodeStmtHope* stmt_hope) const
                 {
-                    if(gen->m_vars.find(stmt_hope.ident.value.value()) != gen->m_vars.end())
+                    if(gen->m_vars.find(stmt_hope->ident.value.value()) != gen->m_vars.end())
                     {
-                        std::cerr<<"Variable already declared: " << stmt_hope.ident.value.value() <<std::endl;
+                        std::cerr<<"Variable already declared: " << stmt_hope->ident.value.value() <<std::endl;
                         exit(EXIT_FAILURE);
                     }
 
-                    gen->m_vars.insert(std::make_pair(stmt_hope.ident.value.value(), var{.stack_loc=gen->m_stack_size}));
-                    gen->gen_expr(stmt_hope.expr);
-
-
+                    gen->m_vars.insert(std::make_pair(stmt_hope->ident.value.value(), var{.stack_loc=gen->m_stack_size}));
+                    gen->gen_expr(stmt_hope->expr);
                 }
 
             };
@@ -99,7 +142,7 @@ class Generator{
             int var_count = 0;
             for(const NodeStmt & stmt: m_prog.stmts)
             {
-                if(std::holds_alternative<NodeStmtHope>(stmt.var)) {
+                if(std::holds_alternative<NodeStmtHope*>(stmt.var)) {
                     var_count++;
                 }
             }

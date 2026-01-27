@@ -166,7 +166,8 @@ CMakeFiles/baby.dir/src/main.cpp.o: \
  /usr/include/c++/13/bits/vector.tcc \
  /home/arjav-jain/Coding/baby/src/types.hpp \
  /home/arjav-jain/Coding/baby/src/tokenizer.hpp \
- /home/arjav-jain/Coding/baby/src/parser.hpp /usr/include/c++/13/variant \
+ /home/arjav-jain/Coding/baby/src/parser.hpp \
+ /home/arjav-jain/Coding/baby/src/arena.hpp /usr/include/c++/13/variant \
  /usr/include/c++/13/bits/parse_numbers.h \
  /home/arjav-jain/Coding/baby/src/generation.hpp \
  /usr/include/c++/13/unordered_map \
@@ -175,4 +176,5 @@ CMakeFiles/baby.dir/src/main.cpp.o: \
  /usr/include/c++/13/bits/hashtable_policy.h \
  /usr/include/c++/13/ext/aligned_buffer.h \
  /usr/include/c++/13/bits/node_handle.h \
- /usr/include/c++/13/bits/erase_if.h
+ /usr/include/c++/13/bits/erase_if.h /usr/include/c++/13/cassert \
+ /usr/include/assert.h
