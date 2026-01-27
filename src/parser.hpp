@@ -12,6 +12,10 @@ using ::bin_prec;
 // Forward declarations
 struct NodeExpr;
 
+struct NodeTermStringLit{
+    Token string_lit;
+};
+
 struct NodeTermIntLit{
     Token int_lit;
 };
@@ -25,7 +29,7 @@ struct NodeTermParen{
 };
 
 struct NodeTerm{
-    std::variant<NodeTermIntLit*, NodeTermIdent*,NodeTermParen*> var;
+    std::variant<NodeTermIntLit*, NodeTermIdent*,NodeTermParen*,NodeTermStringLit*> var;
 };
 
 struct NodeBinExprAdd {
@@ -63,8 +67,17 @@ struct NodeStmtHope{
     NodeExpr* expr;
 };
 
+struct NodeStmtDillusion{
+    Token ident;
+    NodeExpr* expr;
+};
+
+struct NodeStmtTellMe{
+    NodeExpr* expr;
+};
+
 struct NodeStmt{
-    std::variant<NodeStmtExit*, NodeStmtHope*> var;
+    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*> var;
 };
 
 struct NodeProgram{
@@ -110,6 +123,22 @@ class Parser {
                 auto term=m_alloc.alloc<NodeTerm>();
                 term->var=term_paren;
                 return term;
+            }
+            else if(auto double_quote = try_consume(TokenType::double_quotes))
+            {
+                if(auto string_lit=try_consume(TokenType::string_lit))
+                {
+                    if(auto close_quote = try_consume(TokenType::double_quotes))
+                    {
+                        auto Term_expr_string_lit = m_alloc.alloc<NodeTermStringLit>();
+                        Term_expr_string_lit->string_lit=string_lit.value();
+                        auto expr= m_alloc.alloc<NodeTerm>();
+                        expr->var=Term_expr_string_lit;
+                        return expr;
+                    }
+                }
+                std::cerr<<"Invalid string literal"<<std::endl;
+                exit(EXIT_FAILURE);
             }
             return {};
         }
@@ -226,6 +255,7 @@ class Parser {
                 try_consume(TokenType::semi, "expecting semicolon ';'");
                 return NodeStmt{.var=stmt_exit};
             }
+
             else if(peek().has_value() && peek().value().type == TokenType::hope && peek(1).has_value() && peek(1).value().type==TokenType::ident && peek(2).has_value() && peek(2).value().type==TokenType::eq)
             {
                 consume(); // consume 'hope' keyword
@@ -242,6 +272,44 @@ class Parser {
                 }
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
                 return NodeStmt{.var=stmt_hope};
+            }
+
+            else if(peek().has_value() && peek().value().type == TokenType::dillusion && peek(1).has_value() && peek(1).value().type==TokenType::ident && peek(2).has_value() && peek(2).value().type==TokenType::eq)
+            {
+                consume(); // consume 'dillusion' keyword
+                auto stmt_dillusion = m_alloc.alloc<NodeStmtDillusion>();
+                stmt_dillusion->ident=consume(); // consume identifier
+                consume(); // consume '='
+                
+                if(auto expr=parse_expr()) //parsing expression after 'dillusion' token
+                {
+                    stmt_dillusion->expr=expr.value();
+                }
+                else{
+                    std::cerr<<"Invalid Expression after 'dillusion'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+
+                try_consume(TokenType::semi, "expecting semicolon ';'"); 
+                return NodeStmt{.var=stmt_dillusion};
+            }
+
+            else if(peek().has_value() && peek().value().type == TokenType::tell_me && peek(1).has_value() && peek(1).value().type==TokenType::open_paren)
+            {
+                consume(); // consume 'tell_me' keyword
+                consume(); // consume '('
+                auto stmt_tell_me = m_alloc.alloc<NodeStmtTellMe>();
+                if(auto expr=parse_expr()) //parsing expression after 'tell_me' token
+                {
+                    stmt_tell_me->expr=expr.value();
+                }
+                else{
+                    std::cerr<<"Invalid Expression after 'tell_me'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
+                try_consume(TokenType::semi, "expecting semicolon ';'"); 
+                return NodeStmt{.var=stmt_tell_me};
             }
             
             return {};

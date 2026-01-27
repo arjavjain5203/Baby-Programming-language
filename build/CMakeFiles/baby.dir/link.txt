@@ -1,1 +1,1 @@
-/usr/bin/c++ -g CMakeFiles/baby.dir/src/main.cpp.o -o baby 
+/usr/bin/c++ CMakeFiles/baby.dir/src/main.cpp.o -o baby 

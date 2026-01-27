@@ -4,18 +4,22 @@
 #include <optional>
 
 enum class TokenType {
-    bye,
+    bye, // exit
     int_lit,
     semi,
     open_paren,
     close_paren,
     ident,
-    hope,
+    hope, //int variable declaration
     eq,
     plus,
     mul,
     sub,
-    div
+    div,
+    tell_me,
+    string_lit,
+    double_quotes,
+    dillusion // string literal
 };
 
 bool is_bin_op(TokenType type){

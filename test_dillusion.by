@@ -1,0 +1,1 @@
+dillusion msg = "hello world"; tell_me (msg); bye (0);

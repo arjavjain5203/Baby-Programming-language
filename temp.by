@@ -1,3 +1,5 @@
-hope x = (10-2*3)/2;
-hope y= 2*x;
-bye (y);
+hope x = 18*9-7;
+
+dillusion msg = "love u";
+tell_me (x);
+bye (msg);

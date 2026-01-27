@@ -27,7 +27,7 @@ public:
             {
 
                 buf.push_back(consume());
-                while(peek().has_value() && std::isalnum(peek().value()))
+                while(peek().has_value() && (std::isalnum(peek().value()) || peek().value() == '_'))
                 {
                     buf.push_back(consume());
                 }
@@ -40,6 +40,18 @@ public:
                 else if(buf=="hope")
                 {
                     tokens.push_back({.type=TokenType::hope});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="tell_me")
+                {
+                    tokens.push_back({.type=TokenType::tell_me});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="dillusion")
+                {
+                    tokens.push_back({.type=TokenType::dillusion});
                     buf.clear();
                     continue;
                 }
@@ -102,6 +114,27 @@ public:
                         consume();
                         tokens.push_back({.type=TokenType::div});
                         break;
+                    case '"':
+                        // opening quote
+                        consume();
+                        tokens.push_back({.type=TokenType::double_quotes});
+                        {
+                            std::string s;
+                            while(peek().has_value() && peek().value() != '"'){
+                                s.push_back(consume());
+                            }
+                            // push string literal token (content only)
+                            tokens.push_back({.type=TokenType::string_lit, .value=s});
+                            if(peek().has_value() && peek().value() == '"'){
+                                consume(); // closing quote
+                                tokens.push_back({.type=TokenType::double_quotes});
+                            } else {
+                                std::cerr<<"Unterminated string literal"<<std::endl;
+                                exit(EXIT_FAILURE);
+                            }
+                        }
+                        break;
+                    
                     default:
                         std::cerr<<"you sucks! Unexpected character: '" << ch << "' (ASCII: " << (int)ch << ")"<<std::endl;
                         exit(EXIT_FAILURE);
