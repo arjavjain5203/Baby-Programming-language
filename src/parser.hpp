@@ -20,8 +20,12 @@ struct NodeTermIdent{
     Token ident;
 };
 
+struct NodeTermParen{
+    NodeExpr* expr;
+};
+
 struct NodeTerm{
-    std::variant<NodeTermIntLit*, NodeTermIdent*> var;
+    std::variant<NodeTermIntLit*, NodeTermIdent*,NodeTermParen*> var;
 };
 
 struct NodeBinExprAdd {
@@ -43,7 +47,7 @@ struct NodeBinExprMulti{
 };
 
 struct NodeBinExpr{
-    std::variant<NodeBinExprAdd*, NodeBinExprMulti*> var;
+    std::variant<NodeBinExprAdd*, NodeBinExprSub*, NodeBinExprDiv*, NodeBinExprMulti*> var;
 };
 
 struct NodeExpr{
@@ -91,6 +95,21 @@ class Parser {
                 auto expr = m_alloc.alloc<NodeTerm>();
                 expr->var = Term_expr_ident;
                 return expr;
+            }
+            else if(auto open_paren = try_consume(TokenType::open_paren))
+            {
+                auto expr = parse_expr();
+                if(!expr.has_value())
+                {
+                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
+                auto term_paren = m_alloc.alloc<NodeTermParen>();
+                term_paren->expr=expr.value();
+                auto term=m_alloc.alloc<NodeTerm>();
+                term->var=term_paren;
+                return term;
             }
             return {};
         }
@@ -155,6 +174,31 @@ class Parser {
                     bin_expr->var = multi;
                     expr->var = bin_expr;
                 }
+                else if(op.type == TokenType::sub)
+                {
+                    auto sub = m_alloc.alloc<NodeBinExprSub>();
+                    expr_lhs2->var = expr_lhs->var;
+                    sub->left=expr_lhs2;
+                    sub->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = sub;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::div)
+                {
+                    auto div = m_alloc.alloc<NodeBinExprDiv>();
+                    expr_lhs2->var = expr_lhs->var;
+                    div->left=expr_lhs2;
+                    div->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = div;
+                    expr->var = bin_expr;
+                }
+                else{
+                    std::cerr<<"Unknown binary operator"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+
                 expr_lhs->var = expr->var;
             }
 

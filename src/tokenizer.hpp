@@ -22,9 +22,10 @@ public:
         while(peek().has_value())
         {
             char ch = peek().value();
-            
+
             if(std::isalpha(ch))
             {
+
                 buf.push_back(consume());
                 while(peek().has_value() && std::isalnum(peek().value()))
                 {

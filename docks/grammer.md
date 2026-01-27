@@ -21,7 +21,8 @@ $$
     [text{Term}] &\to
     \begin{cases}
         \text{int_lit} \\
-        \text{ident}
+        \text{ident} \\
+        ([\text{expr}])
     \end{cases}
 \end{align}
 $$

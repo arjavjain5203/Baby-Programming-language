@@ -49,6 +49,10 @@ class Generator{
                     gen->asm_code << "    mov rax, QWORD [rsp + " << (gen->m_stack_size - var.stack_loc - 1)*8 << "]\n";
                     gen->push("rax");
                 }
+                void operator()(const NodeTermParen* term_paren){
+                    gen->gen_expr(term_paren->expr);
+                }
+
             };
 
             TermVisitor visitor({.gen=this});
@@ -60,6 +64,24 @@ class Generator{
         {
             struct BinExprVisitor{
                 Generator* gen;
+
+                void operator()(const NodeBinExprSub* sub) const{
+                    gen->gen_expr(sub->left);
+                    gen->gen_expr(sub->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    sub rax, rbx\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprDiv* div) const{
+                    gen->gen_expr(div->left);
+                    gen->gen_expr(div->right);  
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    div rbx\n";
+                    gen->push("rax");
+                }
+
                 void operator()(const NodeBinExprAdd* add) const{
                     gen->gen_expr(add->left);
                     gen->gen_expr(add->right);
