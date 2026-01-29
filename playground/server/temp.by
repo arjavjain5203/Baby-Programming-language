@@ -1,0 +1,8 @@
+hope love = 0;
+
+maybe(love > 0) {
+    bye(love);
+} moveon {
+    tell_me("Love is non-existent.");
+    bye(0);
+}
