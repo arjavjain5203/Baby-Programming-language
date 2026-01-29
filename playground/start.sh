@@ -16,7 +16,7 @@ cd ..
 
 echo "Starting Frontend Client..."
 cd client
-npm run dev &
+npm run build &
 CLIENT_PID=$!
 
 echo "Playground is running!"
