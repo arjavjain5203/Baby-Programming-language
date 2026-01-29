@@ -55,6 +55,30 @@ public:
                     buf.clear();
                     continue;
                 }
+                else if(buf=="maybe")
+                {
+                    tokens.push_back({.type=TokenType::maybe});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="moveon")
+                {
+                    tokens.push_back({.type=TokenType::moveon});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="wait")
+                {
+                    tokens.push_back({.type=TokenType::wait});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="ormaybe")
+                {
+                    tokens.push_back({.type=TokenType::ormaybe});
+                    buf.clear();
+                    continue;
+                }
                 else
                 {
                     tokens.push_back({.type=TokenType::ident,.value=buf});
@@ -113,6 +137,14 @@ public:
                     case '/':
                         consume();
                         tokens.push_back({.type=TokenType::div});
+                        break;
+                    case '{':
+                        consume();
+                        tokens.push_back({.type=TokenType::open_curly});
+                        break;
+                    case '}':
+                        consume();
+                        tokens.push_back({.type=TokenType::close_curly});
                         break;
                     case '"':
                         // opening quote

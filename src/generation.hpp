@@ -4,21 +4,31 @@
 #include <sstream>
 #include <unordered_map>
 #include <cassert>
+#include <map>
+#include <algorithm>
+#include <vector>
+
 
 class Generator{
     private:
         struct var{
+            std::string name;
             size_t stack_loc;
         };
-
+        // Removed duplicate label count line 18
         const NodeProgram m_prog;   
         std::stringstream asm_code;
-        std::unordered_map<std::string, var> m_vars {};
-        std::unordered_map<std::string, std::string> m_str_vars {}; // string variable -> label mapping
+        std::vector<var> m_vars {};
+        std::unordered_map<std::string, std::string> m_str_vars {};
         size_t m_stack_size = 0;
         std::unordered_map<std::string, std::string> m_str_labels {};
         std::unordered_map<std::string, size_t> m_str_lens {};
         size_t m_str_count = 0;
+        int m_label_count = 0;
+        std::vector<size_t> m_scope {};
+
+
+
         void push(const std::string& line) {
             asm_code << "    push " << line << "\n";
             m_stack_size++;
@@ -28,6 +38,24 @@ class Generator{
             m_stack_size--;
         }
 
+        void begin_scope(){
+            m_scope.push_back(m_vars.size());
+        }
+
+        void end_scope(){
+            size_t pop_count = m_vars.size() - m_scope.back();
+            asm_code << "    add rsp, " << pop_count * 8 << "\n";
+            m_stack_size -= pop_count;
+            for(size_t i=0;i<pop_count ; i++)
+            {
+                m_vars.pop_back();
+            }
+            m_scope.pop_back();
+        }
+
+        std::string create_label(){
+            return "label" + std::to_string(m_label_count++);
+        }
 
 
     public:
@@ -44,12 +72,14 @@ class Generator{
                     gen->push("rax");
                 }
 
-                void operator()(const NodeTermIdent* ident){
-                    const std::string var_name = ident->ident.value.value();
+                void operator()(const NodeTermIdent* term_ident)const{
+                    const std::string var_name = term_ident->ident.value.value();
                     
+                    // Logic removed that incorrectly errored on declared variables
+
                     // Check if it's a string variable
                     if(gen->m_str_vars.find(var_name) != gen->m_str_vars.end()){
-                        const std::string label = gen->m_str_vars.at(var_name);
+                       const std::string label = gen->m_str_vars.at(var_name);
                         // Find the original string to get its length
                         size_t str_len = 0;
                         for(const auto& p : gen->m_str_labels){
@@ -63,14 +93,18 @@ class Generator{
                         gen->asm_code << "    lea rsi, [rel " << label << "]\n";
                         gen->asm_code << "    mov rdx, " << str_len << "\n";
                         gen->asm_code << "    syscall\n";
-                    } else if(gen->m_vars.find(var_name) != gen->m_vars.end()) {
-                        // Integer variable
-                        const auto& var = gen->m_vars.at(var_name);
-                        gen->asm_code << "    mov rax, QWORD [rsp + " << (gen->m_stack_size - var.stack_loc - 1)*8 << "]\n";
-                        gen->push("rax");
                     } else {
-                        std::cerr<<"Undeclared variable: " << var_name <<std::endl;
-                        exit(EXIT_FAILURE);
+                        auto it = std::find_if(gen->m_vars.rbegin(), gen->m_vars.rend(), [&](const var& var){
+                            return var.name == var_name;
+                        });
+                        if(it != gen->m_vars.rend()) {
+                            // Integer variable
+                            gen->asm_code << "    mov rax, QWORD [rsp + " << (gen->m_stack_size - it->stack_loc - 1)*8 << "]\n";
+                            gen->push("rax");
+                        } else {
+                            std::cerr<<"Undeclared variable: " << var_name <<std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                 }
                 void operator()(const NodeTermParen* term_paren){
@@ -166,6 +200,17 @@ class Generator{
             std::visit(visitor, expr->var);
 
         }
+
+        void gen_scope(const NodeScope* scope)
+        {
+            begin_scope();
+            for(const auto* stmt : scope->stmts)
+            {
+                gen_stmt(*stmt);
+            }
+            end_scope();
+        }
+
         void gen_stmt(const NodeStmt& stmt) {
 
             struct StmtVisitor{
@@ -180,15 +225,65 @@ class Generator{
                 }
                 void operator()(NodeStmtHope* stmt_hope) const
                 {
-                    if(gen->m_vars.find(stmt_hope->ident.value.value()) != gen->m_vars.end())
+                    auto scope_start = gen->m_scope.empty() ? gen->m_vars.begin() : gen->m_vars.begin() + gen->m_scope.back();
+                    auto it = std::find_if(scope_start, gen->m_vars.end(), [&](const var& var){
+                        return var.name == stmt_hope->ident.value.value();
+                    });
+                    if(it != gen->m_vars.end())
                     {
-                        std::cerr<<"Variable already declared: " << stmt_hope->ident.value.value() <<std::endl;
+                        std::cerr<<"Variable already declared in this scope: " << stmt_hope->ident.value.value() <<std::endl;
                         exit(EXIT_FAILURE);
                     }
 
-                    gen->m_vars.insert(std::make_pair(stmt_hope->ident.value.value(), var{.stack_loc=gen->m_stack_size}));
+                    gen->m_vars.push_back({.name=stmt_hope->ident.value.value(), .stack_loc=gen->m_stack_size});
                     gen->gen_expr(stmt_hope->expr);
                 }
+
+                void operator()(const NodeScope* scope) const
+                {
+                    gen->gen_scope(scope);
+                }
+
+                void operator()(NodeStmtMaybe* stmt_if) const {
+                    gen->gen_expr(stmt_if->condition);
+                    gen->pop("rax");
+                    std::string label = gen->create_label();
+                    gen->asm_code << "    test rax, rax \n";
+                    gen->asm_code << "    jz " << label << "\n";
+                    gen->gen_scope(stmt_if->scope);
+                    gen->asm_code << label << ":\n";
+
+                }
+
+
+                void operator()(NodeStmtMoveOn* stmt) const {
+                    gen->gen_scope(stmt->scope);
+                }
+
+                void operator()(NodeStmtWait* stmt) const {
+                    std::string label_start = gen->create_label();
+                    std::string label_end = gen->create_label();
+                    gen->asm_code << label_start << ":\n";
+                    gen->gen_expr(stmt->condition);
+                    gen->pop("rax");
+                    gen->asm_code << "    test rax, rax \n";
+                    gen->asm_code << "    jz " << label_end << "\n";
+                    gen->gen_scope(stmt->scope);
+                    gen->asm_code << "    jmp " << label_start << "\n";
+                    gen->asm_code << label_end << ":\n";
+                }
+
+                void operator()(NodeStmtOrMaybe* stmt) const {
+                    gen->gen_expr(stmt->condition);
+                    gen->pop("rax");
+                    std::string label = gen->create_label();
+                    gen->asm_code << "    test rax, rax \n";
+                    gen->asm_code << "    jz " << label << "\n";
+                    gen->gen_scope(stmt->scope);
+                    gen->asm_code << label << ":\n";
+                }
+
+
                 void operator()(NodeStmtDillusion* stmt_dillusion) const
                 {
                     const std::string var_name = stmt_dillusion->ident.value.value();
@@ -219,6 +314,27 @@ class Generator{
                     std::cerr<<"String variable must be initialized with a string literal"<<std::endl;
                     exit(EXIT_FAILURE);
                 }
+                void operator()(NodeStmtAssign* stmt_assign) const
+                {
+                    auto it = std::find_if(gen->m_vars.rbegin(), gen->m_vars.rend(), [&](const var& var){
+                        return var.name == stmt_assign->ident.value.value();
+                    });
+
+                    if(it != gen->m_vars.rend())
+                    {
+                        // Found in current scope - Update it
+                        gen->gen_expr(stmt_assign->expr);
+                        gen->pop("rax");
+                        gen->asm_code << "    mov [rsp + " << (gen->m_stack_size - it->stack_loc - 1)*8 << "], rax\n";
+                    }
+                    else
+                    {
+                         // Not found in current scope - Implicitly declare it (Shadowing)
+                        gen->m_vars.push_back({.name=stmt_assign->ident.value.value(), .stack_loc=gen->m_stack_size});
+                        gen->gen_expr(stmt_assign->expr);
+                    }
+                }
+
                 void operator()(NodeStmtTellMe* stmt_tell_me) const
                 {
                     bool is_string = false;

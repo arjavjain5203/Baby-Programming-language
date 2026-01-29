@@ -16,10 +16,17 @@ enum class TokenType {
     mul,
     sub,
     div,
-    tell_me,
+    open_curly, // {
+    close_curly, // }
+    tell_me, // print
     string_lit,
     double_quotes,
-    dillusion // string literal
+    dillusion, // string literal
+    maybe, // if condition
+    moveon, // else condition
+    wait, // while loop
+    ormaybe // else if
+
 };
 
 bool is_bin_op(TokenType type){

@@ -1,5 +1,13 @@
-hope x = 18*9-7;
-
-dillusion msg = "love u";
-tell_me (x);
-bye (msg);
+hope x = 1;
+maybe(x) {
+    tell_me(88);
+}
+hope y = 0;
+maybe(y) {
+    tell_me(77);
+}
+wait(x) {
+    tell_me(x);
+    x = x - 1;
+}
+bye(0);

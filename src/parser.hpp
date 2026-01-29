@@ -10,7 +10,9 @@
 using ::bin_prec;
 
 // Forward declarations
+struct NodeStmt;
 struct NodeExpr;
+
 
 struct NodeTermStringLit{
     Token string_lit;
@@ -67,6 +69,35 @@ struct NodeStmtHope{
     NodeExpr* expr;
 };
 
+struct NodeScope
+{
+    std::vector<NodeStmt*> stmts;
+};
+
+struct NodeStmtMaybe
+{
+    NodeExpr* condition;
+    NodeScope* scope;
+};
+
+struct NodeStmtMoveOn
+{
+    NodeScope* scope;
+};
+
+struct NodeStmtOrMaybe
+{
+    NodeExpr* condition;
+    NodeScope* scope;
+};
+
+struct NodeStmtWait
+{
+    NodeExpr* condition;
+    NodeScope* scope;
+};
+
+
 struct NodeStmtDillusion{
     Token ident;
     NodeExpr* expr;
@@ -76,8 +107,14 @@ struct NodeStmtTellMe{
     NodeExpr* expr;
 };
 
+struct NodeStmtAssign{
+    Token ident;
+    NodeExpr* expr;
+};
+
+
 struct NodeStmt{
-    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*> var;
+    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*, NodeStmtMaybe*, NodeStmtMoveOn*, NodeStmtWait*, NodeStmtOrMaybe*, NodeScope*, NodeStmtAssign*> var;
 };
 
 struct NodeProgram{
@@ -140,6 +177,7 @@ class Parser {
                 std::cerr<<"Invalid string literal"<<std::endl;
                 exit(EXIT_FAILURE);
             }
+
             return {};
         }
 
@@ -235,6 +273,22 @@ class Parser {
         }
 
 
+        std::optional<NodeScope*> parse_scope()
+        {
+            if(!try_consume(TokenType::open_curly).has_value())
+            {
+                return {};
+            }
+            auto scope = m_alloc.alloc<NodeScope>();
+            while(auto stmt = parse_stmt())
+            {
+                auto node_stmt = m_alloc.alloc<NodeStmt>();
+                *node_stmt = stmt.value();
+                scope->stmts.push_back(node_stmt);
+            }
+            try_consume(TokenType::close_curly,"Expected '}'");
+            return scope;
+        }
 
         std::optional<NodeStmt> parse_stmt()
         {
@@ -293,7 +347,18 @@ class Parser {
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
                 return NodeStmt{.var=stmt_dillusion};
             }
-
+            else if(peek().has_value() && peek().value().type == TokenType::open_curly)
+            {
+                if(auto scope = parse_scope()){
+                    auto stmt = m_alloc.alloc<NodeStmt>();
+                    stmt->var = scope.value();
+                    return *stmt;
+                }
+                else{
+                    std::cerr<<"Invalid scope"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
             else if(peek().has_value() && peek().value().type == TokenType::tell_me && peek(1).has_value() && peek(1).value().type==TokenType::open_paren)
             {
                 consume(); // consume 'tell_me' keyword
@@ -310,6 +375,112 @@ class Parser {
                 try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
                 return NodeStmt{.var=stmt_tell_me};
+            }
+            else if(auto maybe = try_consume(TokenType::maybe))
+            {
+                try_consume(TokenType::open_paren,"Expected '(' after 'maybe'");
+                auto stmt_maybe = m_alloc.alloc<NodeStmtMaybe>();
+                if(auto expr = parse_expr())
+                {
+                    stmt_maybe->condition=expr.value();
+                }else
+                {
+                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::close_paren,"Expected ')' after 'maybe'");
+                if(auto scope = parse_scope())
+                {
+                    stmt_maybe->scope=scope.value();
+                }
+                else{
+                    std::cerr<<"Invalid scope inside 'maybe'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                auto stmt=m_alloc.alloc<NodeStmt>();
+                stmt->var=stmt_maybe;
+                return *stmt;
+            }
+            else if(auto move_on = try_consume(TokenType::moveon))
+            {
+                auto stmt_move_on = m_alloc.alloc<NodeStmtMoveOn>();
+                if(auto scope = parse_scope())
+                {
+                    stmt_move_on->scope=scope.value();
+                }
+                else{
+                    std::cerr<<"Invalid scope inside 'moveon'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                auto stmt=m_alloc.alloc<NodeStmt>();
+                stmt->var=stmt_move_on;
+                return *stmt;
+            }
+            else if(auto or_maybe = try_consume(TokenType::ormaybe))
+            {
+                try_consume(TokenType::open_paren,"Expected '(' after 'ormaybe'");
+                auto stmt_or_maybe = m_alloc.alloc<NodeStmtOrMaybe>();
+                if(auto expr = parse_expr())
+                {
+                    stmt_or_maybe->condition=expr.value();
+                }else
+                {
+                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::close_paren,"Expected ')' after 'ormaybe'");
+                if(auto scope = parse_scope())
+                {
+                    stmt_or_maybe->scope=scope.value();
+                }
+                else{
+                    std::cerr<<"Invalid scope inside 'ormaybe'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                auto stmt=m_alloc.alloc<NodeStmt>();
+                stmt->var=stmt_or_maybe;
+                return *stmt;
+            }
+            else if(auto wait = try_consume(TokenType::wait))
+            {
+                try_consume(TokenType::open_paren,"Expected '(' after 'wait'");
+                auto stmt_wait = m_alloc.alloc<NodeStmtWait>();
+                if(auto expr = parse_expr())
+                {
+                    stmt_wait->condition=expr.value();
+                }else
+                {
+                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::close_paren,"Expected ')' after 'wait'");
+                if(auto scope = parse_scope())
+                {
+                    stmt_wait->scope=scope.value();
+                }
+                else{
+                    std::cerr<<"Invalid scope inside 'wait'"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                auto stmt=m_alloc.alloc<NodeStmt>();
+                stmt->var=stmt_wait;
+                return *stmt;
+            }
+            else if(peek().has_value() && peek().value().type==TokenType::ident && peek(1).has_value() && peek(1).value().type==TokenType::eq)
+            {
+                auto stmt_assign = m_alloc.alloc<NodeStmtAssign>();
+                stmt_assign->ident = consume();
+                consume(); // consume '='
+                if(auto expr=parse_expr())
+                {
+                    stmt_assign->expr = expr.value();
+                }
+                else{
+                    std::cerr<<"Invalid Expression after assignment"<<std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::semi, "expecting semicolon ';'");
+                return NodeStmt{.var=stmt_assign};
             }
             
             return {};
@@ -332,6 +503,8 @@ class Parser {
             }
             return prog;
         }
+
+
 
 
 
