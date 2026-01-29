@@ -78,5 +78,7 @@ std::optional<int> bin_prec(TokenType type){
 
 struct Token {
     TokenType type;
+    int line;
+    int col;
     std::optional<std::string> value {};
 };

@@ -21,6 +21,8 @@ public:
 
         while(peek().has_value())
         {
+            int line = m_line;
+            int col = m_col;
             char ch = peek().value();
 
             if(std::isalpha(ch))
@@ -33,37 +35,37 @@ public:
                 }
                 if(buf=="bye")
                 {
-                    tokens.push_back({.type=TokenType::bye});
+                    tokens.push_back({.type=TokenType::bye, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="hope")
                 {
-                    tokens.push_back({.type=TokenType::hope});
+                    tokens.push_back({.type=TokenType::hope, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="tell_me")
                 {
-                    tokens.push_back({.type=TokenType::tell_me});
+                    tokens.push_back({.type=TokenType::tell_me, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="dillusion")
                 {
-                    tokens.push_back({.type=TokenType::dillusion});
+                    tokens.push_back({.type=TokenType::dillusion, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="maybe")
                 {
-                    tokens.push_back({.type=TokenType::maybe});
+                    tokens.push_back({.type=TokenType::maybe, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="ormaybe")
                 {
-                    tokens.push_back({.type=TokenType::ormaybe});
+                    tokens.push_back({.type=TokenType::ormaybe, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
@@ -78,13 +80,13 @@ public:
                 }
                 else if(buf=="moveon")
                 {
-                    tokens.push_back({.type=TokenType::moveon});
+                    tokens.push_back({.type=TokenType::moveon, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
                 else if(buf=="wait")
                 {
-                    tokens.push_back({.type=TokenType::wait});
+                    tokens.push_back({.type=TokenType::wait, .line=line, .col=col});
                     buf.clear();
                     continue;
                 }
@@ -106,7 +108,7 @@ public:
                 }
                 else
                 {
-                    tokens.push_back({.type=TokenType::ident,.value=buf});
+                    tokens.push_back({.type=TokenType::ident, .line=line, .col=col, .value=buf});
                     buf.clear();
                     continue;
                 }
@@ -118,7 +120,7 @@ public:
                 {
                     buf.push_back(consume());
                 }
-                tokens.push_back({.type=TokenType::int_lit,.value=buf});
+                tokens.push_back({.type=TokenType::int_lit, .line=line, .col=col, .value=buf});
                 buf.clear();
                 continue;
             }
@@ -133,32 +135,32 @@ public:
                 {
                     case '(':
                         consume();
-                        tokens.push_back({.type=TokenType::open_paren});
+                        tokens.push_back({.type=TokenType::open_paren, .line=line, .col=col});
                         break;
                     case ')':
                         consume();
-                        tokens.push_back({.type=TokenType::close_paren});
+                        tokens.push_back({.type=TokenType::close_paren, .line=line, .col=col});
                         break;
                     case ';':
                         consume();
-                        tokens.push_back({.type=TokenType::semi});
+                        tokens.push_back({.type=TokenType::semi, .line=line, .col=col});
                         break;
                     case '=':
                         consume();
                         if(peek().has_value() && peek().value() == '='){
                              consume();
-                             tokens.push_back({.type=TokenType::eq_eq});
+                             tokens.push_back({.type=TokenType::eq_eq, .line=line, .col=col});
                         } else {
-                            tokens.push_back({.type=TokenType::eq});
+                            tokens.push_back({.type=TokenType::eq, .line=line, .col=col});
                         }
                         break;
                     case '!':
                         consume();
                          if(peek().has_value() && peek().value() == '='){
                              consume();
-                             tokens.push_back({.type=TokenType::neq});
+                             tokens.push_back({.type=TokenType::neq, .line=line, .col=col});
                         } else {
-                            std::cerr<<"Unexpected character '!' (did you mean '!='?)"<<std::endl;
+                            std::cerr << "Line " << line << ":" << col << " Unexpected character '!' (did you mean '!='?)" << std::endl;
                             exit(EXIT_FAILURE);
                         }
                         break;
@@ -166,67 +168,67 @@ public:
                         consume();
                         if(peek().has_value() && peek().value() == '='){
                              consume();
-                             tokens.push_back({.type=TokenType::lte});
+                             tokens.push_back({.type=TokenType::lte, .line=line, .col=col});
                         } else {
-                            tokens.push_back({.type=TokenType::lt});
+                            tokens.push_back({.type=TokenType::lt, .line=line, .col=col});
                         }
                         break;
                      case '>':
                         consume();
                         if(peek().has_value() && peek().value() == '='){
                              consume();
-                             tokens.push_back({.type=TokenType::gte});
+                             tokens.push_back({.type=TokenType::gte, .line=line, .col=col});
                         } else {
-                            tokens.push_back({.type=TokenType::gt});
+                            tokens.push_back({.type=TokenType::gt, .line=line, .col=col});
                         }
                         break;
                     case '+':
                         consume();
-                        tokens.push_back({.type=TokenType::plus});
+                        tokens.push_back({.type=TokenType::plus, .line=line, .col=col});
                         break;
                     case '*':
                         consume();
-                        tokens.push_back({.type=TokenType::mul});
+                        tokens.push_back({.type=TokenType::mul, .line=line, .col=col});
                         break;
                     case '-':
                         consume();
-                        tokens.push_back({.type=TokenType::sub});
+                        tokens.push_back({.type=TokenType::sub, .line=line, .col=col});
                         break;
                     case '/':
                         consume();
-                        tokens.push_back({.type=TokenType::div});
+                        tokens.push_back({.type=TokenType::div, .line=line, .col=col});
                         break;
                     case '{':
                         consume();
-                        tokens.push_back({.type=TokenType::open_curly});
+                        tokens.push_back({.type=TokenType::open_curly, .line=line, .col=col});
                         break;
                     case '}':
                         consume();
-                        tokens.push_back({.type=TokenType::close_curly});
+                        tokens.push_back({.type=TokenType::close_curly, .line=line, .col=col});
                         break;
                     case '"':
                         // opening quote
                         consume();
-                        tokens.push_back({.type=TokenType::double_quotes});
+                        tokens.push_back({.type=TokenType::double_quotes, .line=line, .col=col});
                         {
                             std::string s;
                             while(peek().has_value() && peek().value() != '"'){
                                 s.push_back(consume());
                             }
                             // push string literal token (content only)
-                            tokens.push_back({.type=TokenType::string_lit, .value=s});
+                            tokens.push_back({.type=TokenType::string_lit, .line=line, .col=col, .value=s});
                             if(peek().has_value() && peek().value() == '"'){
                                 consume(); // closing quote
-                                tokens.push_back({.type=TokenType::double_quotes});
+                                tokens.push_back({.type=TokenType::double_quotes, .line=line, .col=col});
                             } else {
-                                std::cerr<<"Unterminated string literal"<<std::endl;
+                                std::cerr << "Line " << line << ":" << col << " Unterminated string literal" << std::endl;
                                 exit(EXIT_FAILURE);
                             }
                         }
                         break;
                     
                     default:
-                        std::cerr<<"you sucks! Unexpected character: '" << ch << "' (ASCII: " << (int)ch << ")"<<std::endl;
+                        std::cerr << "Line " << line << ":" << col << " you sucks! Unexpected character: '" << ch << "' (ASCII: " << (int)ch << ")" << std::endl;
                         exit(EXIT_FAILURE);
                 }
                 continue;
@@ -250,11 +252,20 @@ private:
 
     inline char consume() //function to consume the current character and advance the position
     {
-        return source[position++];
+        char c = source[position++];
+        if(c == '\n') {
+            m_line++;
+            m_col = 1;
+        } else {
+            m_col++;
+        }
+        return c;
     }
 
 
     const std::string source;
     size_t position = 0;
+    int m_line = 1;
+    int m_col = 1;
 
 };

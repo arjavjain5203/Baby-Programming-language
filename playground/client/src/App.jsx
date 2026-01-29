@@ -4,22 +4,29 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import './index.css';
 
-const DEFAULT_CODE = `hope vibes = 100;
-dillusion mood = "chilling";
+const DEFAULT_CODE = `secret Real analysis of my love life
 
-maybe(vibes > 0) {
-    tell_me("We are currently " + mood);
+hope texts_sent = 7;
+hope replies = 0;
+
+maybe(replies > 0) {
+    tell_me("It is a miracle.");
+} ormaybe(texts_sent > 5) {
+    tell_me("She is ghosting you.");
+    tell_me("Take the hint.");
 } moveon {
-    tell_me("No vibes found.");
+    tell_me("Send another one.");
 }
 
-// Just a chill loop
-hope i = 0;
-wait(i < 3) {
-    tell_me(i);
-    i = i + 1;
+secret Calculating delusional optimism
+hope optimism = 3;
+wait(optimism > 0) {
+    tell_me("She is just busy...");
+    optimism = optimism - 1;
 }
-bye(0);
+
+tell_me("Blocked.");
+bye(404);
 `;
 
 const CHEAT_SHEET = [

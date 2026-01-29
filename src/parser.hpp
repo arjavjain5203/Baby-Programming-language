@@ -178,8 +178,7 @@ class Parser {
                 auto expr = parse_expr();
                 if(!expr.has_value())
                 {
-                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid expression inside parentheses");
                 }
                 try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
                 auto term_paren = m_alloc.alloc<NodeTermParen>();
@@ -201,8 +200,7 @@ class Parser {
                         return expr;
                     }
                 }
-                std::cerr<<"Invalid string literal"<<std::endl;
-                exit(EXIT_FAILURE);
+                error("Invalid string literal");
             }
 
             return {};
@@ -242,8 +240,7 @@ class Parser {
                 auto expr_rhs = parse_expr(next_min_prec);
                 if(!expr_rhs.has_value())
                 {
-                    std::cerr<<"Invalid right-hand side expression"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid right-hand side expression");
                 }
 
                 auto expr = m_alloc.alloc<NodeExpr>();
@@ -349,8 +346,7 @@ class Parser {
                     expr->var = bin_expr;
                 }
                 else{
-                    std::cerr<<"Unknown binary operator"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Unknown binary operator");
                 }
 
                 expr_lhs->var = expr->var;
@@ -389,8 +385,7 @@ class Parser {
                     stmt_exit->expr=node_expr.value();
                 }
                 else{
-                    std::cerr<<"Unexpected token encountered during parsing"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Unexpected token encountered during parsing");
                 }
                 try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
                 try_consume(TokenType::semi, "expecting semicolon ';'");
@@ -408,8 +403,7 @@ class Parser {
                     stmt_hope->expr=expr.value();
                 }
                 else{
-                    std::cerr<<"Invalid Expression after 'hope'"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid Expression after 'hope'");
                 }
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
                 return NodeStmt{.var=stmt_hope};
@@ -427,8 +421,7 @@ class Parser {
                     stmt_dillusion->expr=expr.value();
                 }
                 else{
-                    std::cerr<<"Invalid Expression after 'dillusion'"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid Expression after 'dillusion'");
                 }
 
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
@@ -442,8 +435,7 @@ class Parser {
                     return *stmt;
                 }
                 else{
-                    std::cerr<<"Invalid scope"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid scope");
                 }
             }
             else if(peek().has_value() && peek().value().type == TokenType::tell_me && peek(1).has_value() && peek(1).value().type==TokenType::open_paren)
@@ -456,8 +448,7 @@ class Parser {
                     stmt_tell_me->expr=expr.value();
                 }
                 else{
-                    std::cerr<<"Invalid Expression after 'tell_me'"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid Expression after 'tell_me'");
                 }
                 try_consume(TokenType::close_paren, "expecting close parenthesis ')'");
                 try_consume(TokenType::semi, "expecting semicolon ';'"); 
@@ -472,8 +463,7 @@ class Parser {
                     stmt_maybe->condition=expr.value();
                 }else
                 {
-                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid expression inside parentheses");
                 }
                 try_consume(TokenType::close_paren,"Expected ')' after 'maybe'");
                 if(auto scope = parse_scope())
@@ -481,8 +471,7 @@ class Parser {
                     stmt_maybe->scope=scope.value();
                 }
                 else{
-                    std::cerr<<"Invalid scope inside 'maybe'"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid scope inside 'maybe'");
                 }
 
                 // Check for elifs (ormaybe)
@@ -495,8 +484,7 @@ class Parser {
                         stmt_or_maybe->condition=expr.value();
                     }else
                     {
-                        std::cerr<<"Invalid expression inside parentheses"<<std::endl;
-                        exit(EXIT_FAILURE);
+                        error("Invalid expression inside parentheses");
                     }
                     try_consume(TokenType::close_paren,"Expected ')' after 'ormaybe'");
                     if(auto scope = parse_scope())
@@ -504,8 +492,7 @@ class Parser {
                         stmt_or_maybe->scope=scope.value();
                     }
                     else{
-                        std::cerr<<"Invalid scope inside 'ormaybe'"<<std::endl;
-                        exit(EXIT_FAILURE);
+                        error("Invalid scope inside 'ormaybe'");
                     }
                     stmt_maybe->elifs.push_back(stmt_or_maybe);
                 }
@@ -519,8 +506,7 @@ class Parser {
                         stmt_move_on->scope=scope.value();
                     }
                     else{
-                        std::cerr<<"Invalid scope inside 'moveon'"<<std::endl;
-                        exit(EXIT_FAILURE);
+                        error("Invalid scope inside 'moveon'");
                     }
                     stmt_maybe->else_stmt = stmt_move_on;
                 }
@@ -538,8 +524,7 @@ class Parser {
                     stmt_wait->condition=expr.value();
                 }else
                 {
-                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid expression inside parentheses");
                 }
                 try_consume(TokenType::close_paren,"Expected ')' after 'wait'");
                 if(auto scope = parse_scope())
@@ -547,8 +532,7 @@ class Parser {
                     stmt_wait->scope=scope.value();
                 }
                 else{
-                    std::cerr<<"Invalid scope inside 'wait'"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid scope inside 'wait'");
                 }
                 auto stmt=m_alloc.alloc<NodeStmt>();
                 stmt->var=stmt_wait;
@@ -564,8 +548,7 @@ class Parser {
                     stmt_assign->expr = expr.value();
                 }
                 else{
-                    std::cerr<<"Invalid Expression after assignment"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid Expression after assignment");
                 }
                 try_consume(TokenType::semi, "expecting semicolon ';'");
                 return NodeStmt{.var=stmt_assign};
@@ -585,8 +568,7 @@ class Parser {
                     prog.stmts.push_back(stmt.value());
                 }
                 else{
-                    std::cerr<<"Invalid Statement encountered during parsing"<<std::endl;
-                    exit(EXIT_FAILURE);
+                    error("Invalid Statement encountered during parsing");
                 }
             }
             return prog;
@@ -597,7 +579,7 @@ class Parser {
 
 
     private:
-    [[nodiscard]] inline std::optional<Token> peek(int offset=0) const //nodiscard : to indicate the return value should not be ignored
+    [[nodiscard]] inline std::optional<Token> peek(int offset=0) const 
     {
         if(position+offset >= m_tokens.size())
         {
@@ -609,12 +591,31 @@ class Parser {
         }
     }
 
-    inline Token consume() //function to consume the current token and advance the position
+    inline Token consume() 
     {
         return m_tokens[position++];
     }
 
-    inline Token try_consume(TokenType type,const std::string& err_msg) //function to consume the current token if it matches the expected type
+    void error(const std::string& msg) const
+    {
+        std::cerr << "[Parser Error] ";
+        if(peek().has_value())
+        {
+             const auto& tok = peek().value();
+             std::cerr << "Line " << tok.line << ":" << tok.col << " >>> ";
+        }
+        else if (position > 0 && position <= m_tokens.size()) {
+             const auto& tok = m_tokens[position-1];
+             std::cerr << "Line " << tok.line << ":" << tok.col << " (after this) >>> ";
+        }
+        else {
+             std::cerr << "(at EOF) >>> ";
+        }
+        std::cerr << msg << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    inline Token try_consume(TokenType type,const std::string& err_msg) 
     {
         if(peek().has_value() && peek().value().type==type)
         {
@@ -622,13 +623,13 @@ class Parser {
         }
         else
         {
-            std::cerr<<err_msg<<std::endl;
-            exit(EXIT_FAILURE);
+            error(err_msg);
+            return {}; // Unreachable
         }
     }
 
 
-    inline std::optional<Token> try_consume(TokenType type) //function to consume the current token if it matches the expected type
+    inline std::optional<Token> try_consume(TokenType type) 
     {
         if(peek().has_value() && peek().value().type==type)
         {
@@ -642,8 +643,8 @@ class Parser {
 
 
 
-    ArenaAllocation m_alloc; //m_alloc=arena allocator instance
+    ArenaAllocation m_alloc; 
 
-        const std::vector<Token> m_tokens; //m_tokens=store the list of tokens
+        const std::vector<Token> m_tokens; 
         size_t position = 0;
 };
