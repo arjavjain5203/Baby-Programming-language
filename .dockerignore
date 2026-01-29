@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+playground/client/node_modules
+playground/server/node_modules
+.git
+.DS_Store
+*.log

@@ -17,6 +17,10 @@ const OUT_EXEC = './out'; // Compiler generates this in CWD
 // Ensure we are working in the server directory so compiler outputs are contained
 // Actually, the compiler generates outputs in CWD. So we should run exec with cwd options.
 
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
 app.post('/compile', (req, res) => {
     const { code } = req.body;
 
@@ -67,7 +71,12 @@ app.post('/compile', (req, res) => {
     });
 });
 
-const PORT = 3001;
+// Catch-all route for SPA
+app.get(/^(?!\/compile).+/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

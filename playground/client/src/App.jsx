@@ -53,7 +53,7 @@ function App() {
     if (activeTab === 'asm') setActiveTab('output');
 
     try {
-      const response = await axios.post('http://localhost:3001/compile', { code });
+      const response = await axios.post('/compile', { code });
       const data = response.data;
 
       if (data.success) {
