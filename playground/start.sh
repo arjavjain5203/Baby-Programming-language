@@ -1,28 +1,11 @@
 #!/bin/bash
+set -e
 
-# Kill any existing processes on ports 3001 or 5173
-fuser -k 3001/tcp
-fuser -k 5173/tcp
+echo "Starting production server..."
 
-
-# Ensure we are in the correct directory (relative to the script having been run from project root)
+# Move to project root (safe even if already there)
 cd "$(dirname "$0")"
 
-echo "Starting Backend Server..."
+# Start backend only
 cd server
-node index.js &
-SERVER_PID=$!
-cd ..
-
-echo "Starting Frontend Client..."
-cd client
-npm run build &
-CLIENT_PID=$!
-
-echo "Playground is running!"
-echo "Backend: http://localhost:3001"
-echo "Frontend: http://localhost:5173"
-echo "Press Ctrl+C to stop."
-
-trap "kill $SERVER_PID $CLIENT_PID; exit" INT
-wait
+node index.js
