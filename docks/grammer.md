@@ -10,6 +10,7 @@ $$
         \text{maybe}([\text{expr}])[\text{scope}] (\text{ormaybe}([\text{expr}])[\text{scope}])^* (\text{moveon}[\text{scope}])? \\
         \text{wait}([\text{expr}])[\text{scope}] \\
         \text{tell\_me}([\text{expr}]);\\
+        \text{then}; & \text{// Newline}\\
     \end{cases} \\
 [\text{scope}] &\to \{[\text{Stmt}]^*\} \\ 
 [\text{expr}] &\to

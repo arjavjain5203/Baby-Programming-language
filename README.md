@@ -25,7 +25,15 @@ tell_me(years_single);
 tell_me(reply);
 ```
 
-### 4. Assignment & Ghosting (Implicit Shadowing)
+### 4. `then` (Newline)
+Sometimes you just need some space. Use `then` to take a breath (print a newline).
+```baby
+tell_me("I need space");
+then;
+tell_me("Much better");
+```
+
+### 5. Assignment & Ghosting (Implicit Shadowing)
 Sometimes you meet someone new in a specific context (scope), and they become your whole world, overshadowing everything else. But once you leave that context... they are gone.
 ```baby
 hope ex = 1;
@@ -40,7 +48,17 @@ tell_me(ex); // Back to 1. They never existed outside the club.
 When you've had enough. Just leave.
 ```baby
 bye(0);
-```
+### 6. `maybe` (If)
+Are they interested? `maybe`. Conditional execution for ambiguous signals.
+
+### 7. `ormaybe` (Else If)
+Keeping your options open? `ormaybe` someone else is better.
+
+### 8. `moveon` (Else)
+If it didn't work out, it's time to `moveon`. Execute this block when all hope is lost.
+
+### 9. `wait` (While Loop)
+Sit by the phone and `wait` for them to text back. A loop that might run forever.
 
 ---
 
@@ -48,17 +66,8 @@ bye(0);
 
 We differ from other languages because we promise to commit... eventually.
 
-### `maybe` (If)
-Are they interested? `maybe`. Conditional execution for ambiguous signals.
-
-### `ormaybe` (Else If)
-Keeping your options open? `ormaybe` someone else is better.
-
-### `moveon` (Else)
-If it didn't work out, it's time to `moveon`. Execute this block when all hope is lost.
-
-### `wait` (While Loop)
-Sit by the phone and `wait` for them to text back. A loop that might run forever.
+### Functions
+Defining relationships is hard, but defining functions shouldn't be. Reusable code blocks for your recurring mistakes. (Dream is comming..)
 
 ---
 

@@ -33,7 +33,8 @@ enum class TokenType {
     lt, // <
     gt, // >
     lte, // <=
-    gte // >=
+    gte, // >=
+    then_tok // newline
 };
 
 bool is_bin_op(TokenType type){

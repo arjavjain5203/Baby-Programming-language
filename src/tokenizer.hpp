@@ -69,6 +69,12 @@ public:
                     buf.clear();
                     continue;
                 }
+                else if(buf=="then")
+                {
+                    tokens.push_back({.type=TokenType::then_tok, .line=line, .col=col});
+                    buf.clear();
+                    continue;
+                }
                 else if(buf=="secret")
                 {
                     while(peek().has_value() && peek().value() != '\n')

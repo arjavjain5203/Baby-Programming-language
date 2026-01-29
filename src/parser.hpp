@@ -139,9 +139,12 @@ struct NodeStmtAssign{
     NodeExpr* expr;
 };
 
+struct NodeStmtThen{
+};
+
 
 struct NodeStmt{
-    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*, NodeStmtMaybe*, NodeStmtMoveOn*, NodeStmtWait*, NodeStmtOrMaybe*, NodeScope*, NodeStmtAssign*> var;
+    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*, NodeStmtMaybe*, NodeStmtMoveOn*, NodeStmtWait*, NodeStmtOrMaybe*, NodeScope*, NodeStmtAssign*, NodeStmtThen*> var;
 };
 
 struct NodeProgram{
@@ -552,6 +555,12 @@ class Parser {
                 }
                 try_consume(TokenType::semi, "expecting semicolon ';'");
                 return NodeStmt{.var=stmt_assign};
+            }
+            else if(auto then_tok=try_consume(TokenType::then_tok))
+            {
+               try_consume(TokenType::semi, "expecting semicolon ';'");
+               auto stmt_then = m_alloc.alloc<NodeStmtThen>();
+               return NodeStmt{.var=stmt_then}; 
             }
             
             return {};

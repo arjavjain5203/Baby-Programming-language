@@ -11,17 +11,22 @@ hope replies = 0;
 
 maybe(replies > 0) {
     tell_me("It is a miracle.");
+    then;
 } ormaybe(texts_sent > 5) {
     tell_me("She is ghosting you.");
+    then;
     tell_me("Take the hint.");
+    then;
 } moveon {
     tell_me("Send another one.");
+    then;
 }
 
 secret Calculating delusional optimism
 hope optimism = 3;
 wait(optimism > 0) {
     tell_me("She is just busy...");
+    then;
     optimism = optimism - 1;
 }
 
@@ -37,6 +42,7 @@ const CHEAT_SHEET = [
   { cmd: 'moveon', desc: 'Else block (time to move on).', ex: 'moveon { ... }' },
   { cmd: 'wait', desc: 'While loop (keep waiting until condition fails).', ex: 'wait(x > 0) { ... }' },
   { cmd: 'tell_me', desc: 'Print something to the output.', ex: 'tell_me("hello");' },
+  { cmd: 'then', desc: 'Print a new line (take a breath).', ex: 'then;' },
   { cmd: 'bye', desc: 'Exit the program with a code.', ex: 'bye(0);' },
   { cmd: 'secret', desc: 'Single line comment (shhh).', ex: 'secret hidden text' },
   { cmd: 'hide', desc: 'Multi-line comment block.', ex: 'hide ... hide' },
@@ -144,7 +150,7 @@ function App() {
                 monaco.languages.register({ id: 'baby' });
                 monaco.languages.setMonarchTokensProvider('baby', {
                   keywords: [
-                    'hope', 'maybe', 'ormaybe', 'moveon', 'wait', 'bye', 'tell_me', 'dillusion'
+                    'hope', 'maybe', 'ormaybe', 'moveon', 'wait', 'bye', 'tell_me', 'dillusion', 'then'
                   ],
                   tokenizer: {
                     root: [

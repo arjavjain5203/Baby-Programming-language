@@ -56,7 +56,14 @@ app.post('/compile', (req, res) => {
             const output = runStdout + runStderr; // Capture both
 
             let runtimeError = null;
-            if (runError) {
+            // Node exec treats non-zero exit code as an error.
+            // But for our language, bye(400) is a valid exit.
+            // We only consider it a REAL runtime error if there is stuff in stderr,
+            // OR if the error signal is something else (like killed).
+            if (runError && runError.code !== undefined && !runStderr) {
+                // It's just a non-zero exit code.
+                console.log(`Program finished with exit code ${runError.code}`);
+            } else if (runError) {
                 runtimeError = runStderr || runError.message;
             }
 

@@ -1,7 +1,7 @@
 
 secret This is a single line comment. It should be ignored.
 tell_me("=== STARTING COMPREHENSIVE TEST ===");
-
+then;
 tell_me("--- 1. Variables and Arithmetic ---");
 hope x = 10;
 hope y = 5;

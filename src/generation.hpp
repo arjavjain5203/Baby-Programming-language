@@ -442,6 +442,15 @@ class Generator{
                     }
                 }
 
+                void operator()(NodeStmtThen* stmt_then) const
+                {
+                    gen->asm_code << "    mov rax, 1\n";
+                    gen->asm_code << "    mov rdi, 1\n";
+                    gen->asm_code << "    lea rsi, [rel newline_const]\n";
+                    gen->asm_code << "    mov rdx, 1\n";
+                    gen->asm_code << "    syscall\n";
+                }
+
             };
             StmtVisitor visitor{.gen=this};
             std::visit(visitor, stmt.var);
@@ -520,8 +529,10 @@ class Generator{
             asm_code << "buffer: resb 32\n";
 
             // Emit data section for string literals
+            asm_code << "\nsection .data\n";
+            asm_code << "newline_const: db 10, 0\n";
+
             if(!m_str_labels.empty()){
-                asm_code << "\nsection .data\n";
                 for(const auto &p : m_str_labels){
                     const std::string &str = p.first;
                     const std::string &label = p.second;
