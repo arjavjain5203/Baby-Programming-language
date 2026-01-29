@@ -30,8 +30,13 @@ struct NodeTermParen{
     NodeExpr* expr;
 };
 
+struct NodeTermFuncCall{
+    Token ident;
+    std::vector<NodeExpr*> args;
+};
+
 struct NodeTerm{
-    std::variant<NodeTermIntLit*, NodeTermIdent*,NodeTermParen*,NodeTermStringLit*> var;
+    std::variant<NodeTermIntLit*, NodeTermIdent*,NodeTermParen*,NodeTermStringLit*, NodeTermFuncCall*> var;
 };
 
 struct NodeBinExprAdd {
@@ -143,8 +148,15 @@ struct NodeStmtThen{
 };
 
 
+struct NodeFuncDef{
+    Token name;
+    std::vector<std::pair<Token, Token>> args; // Type, Name
+    NodeScope* scope;
+    Token return_type; // hope or dillusion
+};
+
 struct NodeStmt{
-    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*, NodeStmtMaybe*, NodeStmtMoveOn*, NodeStmtWait*, NodeStmtOrMaybe*, NodeScope*, NodeStmtAssign*, NodeStmtThen*> var;
+    std::variant<NodeStmtExit*, NodeStmtHope*, NodeStmtDillusion*, NodeStmtTellMe*, NodeStmtMaybe*, NodeStmtMoveOn*, NodeStmtWait*, NodeStmtOrMaybe*, NodeScope*, NodeStmtAssign*, NodeStmtThen*, NodeFuncDef*> var;
 };
 
 struct NodeProgram{
@@ -170,6 +182,31 @@ class Parser {
             }
             else if(auto ident = try_consume(TokenType::ident))
             {
+                if(try_consume(TokenType::open_paren))
+                {
+                     auto term_call = m_alloc.alloc<NodeTermFuncCall>();
+                     term_call->ident = ident.value();
+                     if(!try_consume(TokenType::close_paren))
+                     {
+                         while(true)
+                         {
+                             if(auto arg = parse_expr())
+                             {
+                                 term_call->args.push_back(arg.value());
+                             }
+                             else
+                             {
+                                 error("Invalid argument expression");
+                             }
+                             if(try_consume(TokenType::close_paren)) break;
+                             try_consume(TokenType::comma, "Expected ',' or ')' in argument list");
+                         }
+                     }
+                     auto expr = m_alloc.alloc<NodeTerm>();
+                     expr->var = term_call;
+                     return expr;
+                }
+
                 auto Term_expr_ident = m_alloc.alloc<NodeTermIdent>();
                 Term_expr_ident->ident = ident.value();
                 auto expr = m_alloc.alloc<NodeTerm>();
@@ -395,40 +432,135 @@ class Parser {
                 return NodeStmt{.var=stmt_exit};
             }
 
-            else if(peek().has_value() && peek().value().type == TokenType::hope && peek(1).has_value() && peek(1).value().type==TokenType::ident && peek(2).has_value() && peek(2).value().type==TokenType::eq)
+            else if(peek().has_value() && peek().value().type == TokenType::hope && peek(1).has_value() && peek(1).value().type==TokenType::ident)
             {
-                consume(); // consume 'hope' keyword
-                auto stmt_hope = m_alloc.alloc<NodeStmtHope>();
-                stmt_hope->ident=consume(); // consume identifier
-                consume(); // consume '='
-                if(auto expr=parse_expr()) //parsing expression after 'hope' token
+                // Look ahead for '(' (Func Def) or '=' (Var Decl)
+                if(peek(2).has_value() && peek(2).value().type==TokenType::open_paren)
                 {
-                    stmt_hope->expr=expr.value();
+                    // Function Definition: hope name ( ...
+                    Token ret_type = consume(); // hope
+                    Token name = consume(); // ident
+                    consume(); // open_paren
+                    
+                    auto func_def = m_alloc.alloc<NodeFuncDef>();
+                    func_def->return_type = ret_type;
+                    func_def->name = name;
+                    
+                    if(!try_consume(TokenType::close_paren))
+                    {
+                        while(true)
+                        {
+                            Token type_tok;
+                            if(peek().has_value() && (peek().value().type==TokenType::hope || peek().value().type==TokenType::dillusion))
+                            {
+                                type_tok = consume();
+                            }
+                            else
+                            {
+                                error("Expected type (hope/dillusion) in function arguments");
+                            }
+                            
+                            Token arg_name = try_consume(TokenType::ident, "Expected argument name").value();
+                            func_def->args.push_back({type_tok, arg_name});
+
+                            if(try_consume(TokenType::close_paren)) break;
+                            try_consume(TokenType::comma, "Expected ',' or ')' in parameter list");
+                        }
+                    }
+                    
+                    if(auto scope = parse_scope())
+                    {
+                        func_def->scope = scope.value();
+                    }
+                    else
+                    {
+                        error("Expected scope block for function definition");
+                    }
+                    return NodeStmt{.var=func_def};
                 }
-                else{
-                    error("Invalid Expression after 'hope'");
+                else if(peek(2).has_value() && peek(2).value().type==TokenType::eq)
+                {
+                    // Variable Declaration: hope name = ...
+                    consume(); // consume 'hope' keyword
+                    auto stmt_hope = m_alloc.alloc<NodeStmtHope>();
+                    stmt_hope->ident=consume(); // consume identifier
+                    consume(); // consume '='
+                    if(auto expr=parse_expr()) //parsing expression after 'hope' token
+                    {
+                        stmt_hope->expr=expr.value();
+                    }
+                    else{
+                        error("Invalid Expression after 'hope'");
+                    }
+                    try_consume(TokenType::semi, "expecting semicolon ';'"); 
+                    return NodeStmt{.var=stmt_hope};
                 }
-                try_consume(TokenType::semi, "expecting semicolon ';'"); 
-                return NodeStmt{.var=stmt_hope};
             }
 
-            else if(peek().has_value() && peek().value().type == TokenType::dillusion && peek(1).has_value() && peek(1).value().type==TokenType::ident && peek(2).has_value() && peek(2).value().type==TokenType::eq)
+            else if(peek().has_value() && peek().value().type == TokenType::dillusion && peek(1).has_value() && peek(1).value().type==TokenType::ident)
             {
-                consume(); // consume 'dillusion' keyword
-                auto stmt_dillusion = m_alloc.alloc<NodeStmtDillusion>();
-                stmt_dillusion->ident=consume(); // consume identifier
-                consume(); // consume '='
-                
-                if(auto expr=parse_expr()) //parsing expression after 'dillusion' token
+                 // Look ahead for '(' (Func Def) or '=' (Var Decl)
+                if(peek(2).has_value() && peek(2).value().type==TokenType::open_paren)
                 {
-                    stmt_dillusion->expr=expr.value();
-                }
-                else{
-                    error("Invalid Expression after 'dillusion'");
-                }
+                    // Function Definition: dillusion name ( ...
+                    Token ret_type = consume(); // dillusion
+                    Token name = consume(); // ident
+                    consume(); // open_paren
+                    
+                    auto func_def = m_alloc.alloc<NodeFuncDef>();
+                    func_def->return_type = ret_type;
+                    func_def->name = name;
+                    
+                    if(!try_consume(TokenType::close_paren))
+                    {
+                        while(true)
+                        {
+                            Token type_tok;
+                            if(peek().has_value() && (peek().value().type==TokenType::hope || peek().value().type==TokenType::dillusion))
+                            {
+                                type_tok = consume();
+                            }
+                            else
+                            {
+                                error("Expected type (hope/dillusion) in function arguments");
+                            }
+                            
+                            Token arg_name = try_consume(TokenType::ident, "Expected argument name").value();
+                            func_def->args.push_back({type_tok, arg_name});
 
-                try_consume(TokenType::semi, "expecting semicolon ';'"); 
-                return NodeStmt{.var=stmt_dillusion};
+                            if(try_consume(TokenType::close_paren)) break;
+                            try_consume(TokenType::comma, "Expected ',' or ')' in parameter list");
+                        }
+                    }
+                    
+                    if(auto scope = parse_scope())
+                    {
+                        func_def->scope = scope.value();
+                    }
+                    else
+                    {
+                        error("Expected scope block for function definition");
+                    }
+                    return NodeStmt{.var=func_def};
+                }
+                else if(peek(2).has_value() && peek(2).value().type==TokenType::eq)
+                {
+                    consume(); // consume 'dillusion' keyword
+                    auto stmt_dillusion = m_alloc.alloc<NodeStmtDillusion>();
+                    stmt_dillusion->ident=consume(); // consume identifier
+                    consume(); // consume '='
+                    
+                    if(auto expr=parse_expr()) //parsing expression after 'dillusion' token
+                    {
+                        stmt_dillusion->expr=expr.value();
+                    }
+                    else{
+                        error("Invalid Expression after 'dillusion'");
+                    }
+
+                    try_consume(TokenType::semi, "expecting semicolon ';'"); 
+                    return NodeStmt{.var=stmt_dillusion};
+                }
             }
             else if(peek().has_value() && peek().value().type == TokenType::open_curly)
             {

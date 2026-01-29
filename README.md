@@ -62,12 +62,24 @@ Sit by the phone and `wait` for them to text back. A loop that might run forever
 
 ---
 
+### 10. Functions
+Defining relationships is hard, but defining functions shouldn't be.
+```baby
+hope add(hope a, hope b) {
+    bye(a + b); // Returns the sum
+}
+
+hope sum = add(10, 20);
+tell_me(sum);
+```
+
+---
+
 ## Future Features (Coming Soon to a Heartbreak Near You)
 
 We differ from other languages because we promise to commit... eventually.
 
-### Functions
-Defining relationships is hard, but defining functions shouldn't be. Reusable code blocks for your recurring mistakes. (Dream is comming..)
+(Empty for now)
 
 ---
 

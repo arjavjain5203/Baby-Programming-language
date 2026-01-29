@@ -4,34 +4,38 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import './index.css';
 
-const DEFAULT_CODE = `secret Real analysis of my love life
+const DEFAULT_CODE = `secret Relationship Viability Calculator
 
-hope texts_sent = 7;
-hope replies = 0;
+hope calculate_viability(hope texts_received, hope texts_sent) {
+    secret If you send more than you receive... oh no.
+    maybe(texts_sent > texts_received * 2) {
+        then;
+        tell_me("Stage 5 Clinger Alert.");
+        bye(0);
+    }
+    
+    hope ratio = texts_received * 10 / texts_sent;
+    bye(ratio);
+}
 
-maybe(replies > 0) {
-    tell_me("It is a miracle.");
-    then;
-} ormaybe(texts_sent > 5) {
-    tell_me("She is ghosting you.");
-    then;
-    tell_me("Take the hint.");
-    then;
+hope my_texts = 50;
+hope her_texts = 2;
+
+tell_me("Calculating viability...");
+then;
+
+hope score = calculate_viability(her_texts, my_texts);
+
+maybe(score < 5) {
+   tell_me("Viability Score: Low.");
+   then;
+   tell_me("It is not you, it is... actually, it is you.");
 } moveon {
-    tell_me("Send another one.");
-    then;
+   tell_me("Viability Score: Good.");
+   tell_me("Plan the wedding.");
 }
 
-secret Calculating delusional optimism
-hope optimism = 3;
-wait(optimism > 0) {
-    tell_me("She is just busy...");
-    then;
-    optimism = optimism - 1;
-}
-
-tell_me("Blocked.");
-bye(404);
+bye(0);
 `;
 
 const CHEAT_SHEET = [
@@ -43,7 +47,9 @@ const CHEAT_SHEET = [
   { cmd: 'wait', desc: 'While loop (keep waiting until condition fails).', ex: 'wait(x > 0) { ... }' },
   { cmd: 'tell_me', desc: 'Print something to the output.', ex: 'tell_me("hello");' },
   { cmd: 'then', desc: 'Print a new line (take a breath).', ex: 'then;' },
-  { cmd: 'bye', desc: 'Exit the program with a code.', ex: 'bye(0);' },
+  { cmd: 'bye', desc: 'Exit program 0 / Return value in func.', ex: 'bye(0);' },
+  { cmd: 'func', desc: 'Define function.', ex: 'hope add(hope a) { bye(a+1); }' },
+  { cmd: 'call', desc: 'Call function.', ex: 'add(1);' },
   { cmd: 'secret', desc: 'Single line comment (shhh).', ex: 'secret hidden text' },
   { cmd: 'hide', desc: 'Multi-line comment block.', ex: 'hide ... hide' },
 ];

@@ -11,8 +11,11 @@ $$
         \text{wait}([\text{expr}])[\text{scope}] \\
         \text{tell\_me}([\text{expr}]);\\
         \text{then}; & \text{// Newline}\\
+        \text{FuncDef} & \text{// Function Definition}
     \end{cases} \\
 [\text{scope}] &\to \{[\text{Stmt}]^*\} \\ 
+[\text{FuncDef}] &\to (\text{hope}|\text{dillusion})\space\text{ident}( ([\text{Type}] \space \text{ident} (, [\text{Type}] \space \text{ident})*)? ) [\text{scope}] \\
+[\text{Type}] &\to \text{hope} | \text{dillusion} \\
 [\text{expr}] &\to
     \begin{cases}
         [\text{Term}] \\
@@ -36,6 +39,7 @@ $$
         \text{int\_lit} \\
         \text{string\_lit} \\
         \text{ident} \\
+        \text{ident}( ([\text{expr}] (, [\text{expr}])*)? ) & \text{// Function Call} \\
         ([\text{expr}])
     \end{cases}
 \end{align}

@@ -26,6 +26,7 @@ class Generator{
         size_t m_str_count = 0;
         int m_label_count = 0;
         std::vector<size_t> m_scope {};
+        bool m_inside_func = false;
 
 
 
@@ -125,6 +126,29 @@ class Generator{
                     gen->asm_code << "    lea rsi, [rel " << label << "]" << "\n";
                     gen->asm_code << "    mov rdx, " << gen->m_str_lens.at(s) << "\n";
                     gen->asm_code << "    syscall\n";
+                }
+
+                void operator()(const NodeTermFuncCall* term_call) const{
+                    // Push arguments in reverse order (Convention preference, but for stack it doesn't matter as long as we pop consistently)
+                    // Let's push left-to-right (first arg pushed first). 
+                    // To access them in callee: [rbp + 16 + (N-1-i)*8] ?
+                    // Actually, if we push Arg1, Arg2. Stack: Arg2 (top), Arg1.
+                    // Callee RBP+16 is Arg2. RBP+24 is Arg1.
+                    // Let's invert push order so Arg1 is at top?
+                    // Standard C (cdecl) pushes Right-to-Left. ArgN ... Arg1. Stack: Arg1 (top).
+                    // let's do that.
+                    for(auto it = term_call->args.rbegin(); it != term_call->args.rend(); ++it)
+                    {
+                        gen->gen_expr(*it);
+                    }
+                    gen->asm_code << "    call func_" << term_call->ident.value.value() << "\n";
+                    // Clean up stack
+                    size_t args_size = term_call->args.size();
+                    if(args_size > 0){
+                        gen->asm_code << "    add rsp, " << args_size * 8 << "\n";
+                        gen->m_stack_size -= args_size;
+                    }
+                    gen->push("rax"); // Result
                 }
 
             };
@@ -280,9 +304,20 @@ class Generator{
                 void operator()(NodeStmtExit* stmt_exit) const
                 {
                     gen->gen_expr(stmt_exit->expr);
-                    gen->asm_code << "    mov rax, 60\n";
-                    gen->pop("rdi");
-                    gen->asm_code << "    syscall\n";
+                    if(gen->m_inside_func)
+                    {
+                        // Return from function
+                        gen->pop("rax");
+                        gen->asm_code << "    leave\n";
+                        gen->asm_code << "    ret\n";
+                    }
+                    else
+                    {
+                        // Exit program
+                        gen->asm_code << "    mov rax, 60\n";
+                        gen->pop("rdi");
+                        gen->asm_code << "    syscall\n";
+                    }
                 }
                 void operator()(NodeStmtHope* stmt_hope) const
                 {
@@ -451,6 +486,54 @@ class Generator{
                     gen->asm_code << "    syscall\n";
                 }
 
+                void operator()(NodeFuncDef* func_def) const
+                {
+                    // Function definition should not be executed inline in main flow. 
+                    // It is handled by the first pass in gen_program or skipped if we iterate naively.
+                    // We will generate the code here, but we assume gen_program calls this at the right time (outside _start).
+                    
+                    std::string func_label = "func_" + func_def->name.value.value();
+                    gen->asm_code << "\n" << func_label << ":\n";
+                    gen->asm_code << "    push rbp\n";
+                    gen->asm_code << "    mov rbp, rsp\n";
+                    
+                    // Reset stack tracking for function scope
+                    size_t old_stack_size = gen->m_stack_size;
+                    std::vector<var> old_vars = gen->m_vars;
+                    gen->m_stack_size = 0;
+                    gen->m_vars.clear();
+                    gen->m_inside_func = true;
+                    
+                    // Bind Arguments
+                    // Stack at entry: [RetIP] [OldRBP] [Arg1] [Arg2] ... (Assuming Right-to-Left push)
+                    // Arg1 is at RBP+16. Arg2 is at RBP+24.
+                    // We want to access them as if they are local variables.
+                    // We can Copy them to local stack or map them.
+                    // Mapping is complex because 'gen_term' expects 'rsp + offset'. 
+                    // Simplest: Push them from [rbp+offset] to stack to make them local vars.
+                    
+                    size_t arg_count = func_def->args.size();
+                    for(size_t i=0; i<arg_count; ++i)
+                    {
+                        // Arg i (0-index) is at RBP + 16 + i*8
+                        gen->asm_code << "    push QWORD [rbp + " << 16 + i*8 << "]\n";
+                        gen->m_stack_size++;
+                        gen->m_vars.push_back({.name=func_def->args[i].second.value.value(), .stack_loc=gen->m_stack_size-1}); // stack_loc matches current pos
+                    }
+                    
+                    gen->gen_scope(func_def->scope);
+                    
+                    // Default return 0 if no generic return found (just safety)
+                    gen->asm_code << "    mov rax, 0\n";
+                    gen->asm_code << "    leave\n";
+                    gen->asm_code << "    ret\n";
+                    
+                    // Restore state
+                    gen->m_inside_func = false;
+                    gen->m_vars = old_vars;
+                    gen->m_stack_size = old_stack_size;
+                }
+
             };
             StmtVisitor visitor{.gen=this};
             std::visit(visitor, stmt.var);
@@ -460,23 +543,21 @@ class Generator{
         [[nodiscard]] std::string gen_program() {
             asm_code << "section .text\n";
             asm_code << "global _start\n";
-            asm_code << "_start:\n";
-            
-            // First pass: count variables to allocate stack space
-            int var_count = 0;
+            // Generate Functions First
             for(const NodeStmt & stmt: m_prog.stmts)
             {
-                if(std::holds_alternative<NodeStmtHope*>(stmt.var)) {
-                    var_count++;
+                if(std::holds_alternative<NodeFuncDef*>(stmt.var)) {
+                    gen_stmt(stmt);
                 }
             }
             
-            // Allocate stack space
-
-            
+            asm_code << "\n_start:\n";
+            // Generate Main Body (Skip functions)
             for(const NodeStmt & stmt: m_prog.stmts)
             {
-                gen_stmt(stmt);
+                 if(!std::holds_alternative<NodeFuncDef*>(stmt.var)) {
+                    gen_stmt(stmt);
+                }
             }
             
             

@@ -59,6 +59,14 @@ maybe(val == 999) {
     tell_me("val is not 999 (Correct - moveon)");
 }
 
+tell_me("--- 3.5. Functions ---");
+hope add(hope a, hope b) {
+    bye(a + b);
+}
+hope result = add(10, 20);
+tell_me("add(10, 20) result:");
+tell_me(result);
+
 tell_me("--- 4. Loops (wait) ---");
 hope counter = 3;
 wait(counter > 0) {

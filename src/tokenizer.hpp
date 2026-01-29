@@ -151,6 +151,10 @@ public:
                         consume();
                         tokens.push_back({.type=TokenType::semi, .line=line, .col=col});
                         break;
+                    case ',':
+                        consume();
+                        tokens.push_back({.type=TokenType::comma, .line=line, .col=col});
+                        break;
                     case '=':
                         consume();
                         if(peek().has_value() && peek().value() == '='){
