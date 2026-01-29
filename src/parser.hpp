@@ -460,7 +460,7 @@ class Parser {
                                 error("Expected type (hope/dillusion) in function arguments");
                             }
                             
-                            Token arg_name = try_consume(TokenType::ident, "Expected argument name").value();
+                            Token arg_name = try_consume(TokenType::ident, "Expected argument name");
                             func_def->args.push_back({type_tok, arg_name});
 
                             if(try_consume(TokenType::close_paren)) break;
@@ -525,7 +525,7 @@ class Parser {
                                 error("Expected type (hope/dillusion) in function arguments");
                             }
                             
-                            Token arg_name = try_consume(TokenType::ident, "Expected argument name").value();
+                            Token arg_name = try_consume(TokenType::ident, "Expected argument name");
                             func_def->args.push_back({type_tok, arg_name});
 
                             if(try_consume(TokenType::close_paren)) break;
