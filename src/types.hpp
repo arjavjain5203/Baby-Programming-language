@@ -25,8 +25,15 @@ enum class TokenType {
     maybe, // if condition
     moveon, // else condition
     wait, // while loop
-    ormaybe // else if
-
+    ormaybe, // else if
+    hide, // multiline comment
+    secret, // single line comment
+    eq_eq, // ==
+    neq, // !=
+    lt, // <
+    gt, // >
+    lte, // <=
+    gte // >=
 };
 
 bool is_bin_op(TokenType type){
@@ -35,6 +42,12 @@ bool is_bin_op(TokenType type){
         case TokenType::mul:
         case TokenType::sub:
         case TokenType::div:
+        case TokenType::eq_eq:
+        case TokenType::neq:
+        case TokenType::lt:
+        case TokenType::gt:
+        case TokenType::lte:
+        case TokenType::gte:
             return true;
         default:
             return false;
@@ -44,19 +57,23 @@ bool is_bin_op(TokenType type){
 
 std::optional<int> bin_prec(TokenType type){
     switch(type){
-        case TokenType::plus:
-            return 0;
         case TokenType::mul:
-            return 1;
-        case TokenType::sub:
-            return 0;
         case TokenType::div:
+            return 2;
+        case TokenType::plus:
+        case TokenType::sub:
             return 1;
+        case TokenType::eq_eq:
+        case TokenType::neq:
+        case TokenType::lt:
+        case TokenType::gt:
+        case TokenType::lte:
+        case TokenType::gte:
+            return 0;
         default:
             return {};
     }
 }
-
 
 
 struct Token {

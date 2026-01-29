@@ -61,6 +61,21 @@ public:
                     buf.clear();
                     continue;
                 }
+                else if(buf=="ormaybe")
+                {
+                    tokens.push_back({.type=TokenType::ormaybe});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf=="secret")
+                {
+                    while(peek().has_value() && peek().value() != '\n')
+                    {
+                        consume();
+                    }
+                    buf.clear();
+                    continue;
+                }
                 else if(buf=="moveon")
                 {
                     tokens.push_back({.type=TokenType::moveon});
@@ -73,10 +88,20 @@ public:
                     buf.clear();
                     continue;
                 }
-                else if(buf=="ormaybe")
+                else if(buf=="hide")
                 {
-                    tokens.push_back({.type=TokenType::ormaybe});
                     buf.clear();
+                    while(peek().has_value()) {
+                         if(peek().value() == 'h' && 
+                            peek(1).has_value() && peek(1).value() == 'i' &&
+                            peek(2).has_value() && peek(2).value() == 'd' && 
+                            peek(3).has_value() && peek(3).value() == 'e')
+                         {
+                             consume(); consume(); consume(); consume();
+                             break;
+                         }
+                         consume();
+                    }
                     continue;
                 }
                 else
@@ -120,7 +145,40 @@ public:
                         break;
                     case '=':
                         consume();
-                        tokens.push_back({.type=TokenType::eq});
+                        if(peek().has_value() && peek().value() == '='){
+                             consume();
+                             tokens.push_back({.type=TokenType::eq_eq});
+                        } else {
+                            tokens.push_back({.type=TokenType::eq});
+                        }
+                        break;
+                    case '!':
+                        consume();
+                         if(peek().has_value() && peek().value() == '='){
+                             consume();
+                             tokens.push_back({.type=TokenType::neq});
+                        } else {
+                            std::cerr<<"Unexpected character '!' (did you mean '!='?)"<<std::endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        break;
+                    case '<':
+                        consume();
+                        if(peek().has_value() && peek().value() == '='){
+                             consume();
+                             tokens.push_back({.type=TokenType::lte});
+                        } else {
+                            tokens.push_back({.type=TokenType::lt});
+                        }
+                        break;
+                     case '>':
+                        consume();
+                        if(peek().has_value() && peek().value() == '='){
+                             consume();
+                             tokens.push_back({.type=TokenType::gte});
+                        } else {
+                            tokens.push_back({.type=TokenType::gt});
+                        }
                         break;
                     case '+':
                         consume();

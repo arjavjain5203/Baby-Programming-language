@@ -152,6 +152,7 @@ class Generator{
                     gen->gen_expr(div->right);  
                     gen->pop("rbx");
                     gen->pop("rax");
+                    gen->asm_code << "    xor rdx, rdx\n";
                     gen->asm_code << "    div rbx\n";
                     gen->push("rax");
                 }
@@ -170,6 +171,66 @@ class Generator{
                     gen->pop("rbx");
                     gen->pop("rax");
                     gen->asm_code << "    mul rbx\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprEq* eq) const{
+                    gen->gen_expr(eq->left);
+                    gen->gen_expr(eq->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    sete al\n";
+                    gen->asm_code << "    movzx rax, al\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprNeq* neq) const{
+                    gen->gen_expr(neq->left);
+                    gen->gen_expr(neq->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    setne al\n";
+                    gen->asm_code << "    movzx rax, al\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprLt* lt) const{
+                    gen->gen_expr(lt->left);
+                    gen->gen_expr(lt->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    setl al\n";
+                    gen->asm_code << "    movzx rax, al\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprGt* gt) const{
+                    gen->gen_expr(gt->left);
+                    gen->gen_expr(gt->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    setg al\n";
+                    gen->asm_code << "    movzx rax, al\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprLte* lte) const{
+                    gen->gen_expr(lte->left);
+                    gen->gen_expr(lte->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    setle al\n";
+                    gen->asm_code << "    movzx rax, al\n";
+                    gen->push("rax");
+                }
+                void operator()(const NodeBinExprGte* gte) const{
+                    gen->gen_expr(gte->left);
+                    gen->gen_expr(gte->right);
+                    gen->pop("rbx");
+                    gen->pop("rax");
+                    gen->asm_code << "    cmp rax, rbx\n";
+                    gen->asm_code << "    setge al\n";
+                    gen->asm_code << "    movzx rax, al\n";
                     gen->push("rax");
                 }
 
@@ -244,20 +305,39 @@ class Generator{
                     gen->gen_scope(scope);
                 }
 
-                void operator()(NodeStmtMaybe* stmt_if) const {
-                    gen->gen_expr(stmt_if->condition);
+                void operator()(NodeStmtMaybe* stmt_maybe) const {
+                    std::string label_end = gen->create_label();
+                    std::string label_next = gen->create_label();
+
+                    // IF
+                    gen->gen_expr(stmt_maybe->condition);
                     gen->pop("rax");
-                    std::string label = gen->create_label();
                     gen->asm_code << "    test rax, rax \n";
-                    gen->asm_code << "    jz " << label << "\n";
-                    gen->gen_scope(stmt_if->scope);
-                    gen->asm_code << label << ":\n";
+                    gen->asm_code << "    jz " << label_next << "\n";
+                    gen->gen_scope(stmt_maybe->scope);
+                    gen->asm_code << "    jmp " << label_end << "\n";
+                    gen->asm_code << label_next << ":\n";
 
-                }
+                    // ELIFS
+                    for(const auto* elif : stmt_maybe->elifs)
+                    {
+                        label_next = gen->create_label();
+                        gen->gen_expr(elif->condition);
+                        gen->pop("rax");
+                        gen->asm_code << "    test rax, rax \n";
+                        gen->asm_code << "    jz " << label_next << "\n";
+                        gen->gen_scope(elif->scope);
+                        gen->asm_code << "    jmp " << label_end << "\n";
+                        gen->asm_code << label_next << ":\n";
+                    }
 
+                    // ELSE
+                    if(stmt_maybe->else_stmt.has_value())
+                    {
+                        gen->gen_scope(stmt_maybe->else_stmt.value()->scope);
+                    }
 
-                void operator()(NodeStmtMoveOn* stmt) const {
-                    gen->gen_scope(stmt->scope);
+                    gen->asm_code << label_end << ":\n";
                 }
 
                 void operator()(NodeStmtWait* stmt) const {
@@ -273,15 +353,15 @@ class Generator{
                     gen->asm_code << label_end << ":\n";
                 }
 
-                void operator()(NodeStmtOrMaybe* stmt) const {
-                    gen->gen_expr(stmt->condition);
-                    gen->pop("rax");
-                    std::string label = gen->create_label();
-                    gen->asm_code << "    test rax, rax \n";
-                    gen->asm_code << "    jz " << label << "\n";
+                void operator()(NodeStmtMoveOn* stmt) const {
+                    // This should not be visited directly anymore via proper parsing, 
+                    // but keeping basic impl just in case or empty
                     gen->gen_scope(stmt->scope);
-                    gen->asm_code << label << ":\n";
                 }
+               
+                 void operator()(NodeStmtOrMaybe* stmt) const {
+                    // Should not be visited directly
+                 }
 
 
                 void operator()(NodeStmtDillusion* stmt_dillusion) const

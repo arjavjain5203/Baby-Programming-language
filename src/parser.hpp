@@ -52,8 +52,33 @@ struct NodeBinExprMulti{
      NodeExpr* right;
 };
 
+struct NodeBinExprEq{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+struct NodeBinExprNeq{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+struct NodeBinExprLt{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+struct NodeBinExprGt{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+struct NodeBinExprLte{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+struct NodeBinExprGte{
+    NodeExpr* left;
+    NodeExpr* right;
+};
+
 struct NodeBinExpr{
-    std::variant<NodeBinExprAdd*, NodeBinExprSub*, NodeBinExprDiv*, NodeBinExprMulti*> var;
+    std::variant<NodeBinExprAdd*, NodeBinExprSub*, NodeBinExprDiv*, NodeBinExprMulti*, NodeBinExprEq*, NodeBinExprNeq*, NodeBinExprLt*, NodeBinExprGt*, NodeBinExprLte*, NodeBinExprGte*> var;
 };
 
 struct NodeExpr{
@@ -74,12 +99,6 @@ struct NodeScope
     std::vector<NodeStmt*> stmts;
 };
 
-struct NodeStmtMaybe
-{
-    NodeExpr* condition;
-    NodeScope* scope;
-};
-
 struct NodeStmtMoveOn
 {
     NodeScope* scope;
@@ -89,6 +108,14 @@ struct NodeStmtOrMaybe
 {
     NodeExpr* condition;
     NodeScope* scope;
+};
+
+struct NodeStmtMaybe
+{
+    NodeExpr* condition;
+    NodeScope* scope;
+    std::vector<NodeStmtOrMaybe*> elifs;
+    std::optional<NodeStmtMoveOn*> else_stmt;
 };
 
 struct NodeStmtWait
@@ -261,6 +288,66 @@ class Parser {
                     bin_expr->var = div;
                     expr->var = bin_expr;
                 }
+                else if(op.type == TokenType::eq_eq)
+                {
+                    auto eq = m_alloc.alloc<NodeBinExprEq>();
+                    expr_lhs2->var = expr_lhs->var;
+                    eq->left=expr_lhs2;
+                    eq->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = eq;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::neq)
+                {
+                    auto neq = m_alloc.alloc<NodeBinExprNeq>();
+                    expr_lhs2->var = expr_lhs->var;
+                    neq->left=expr_lhs2;
+                    neq->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = neq;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::lt)
+                {
+                    auto lt = m_alloc.alloc<NodeBinExprLt>();
+                    expr_lhs2->var = expr_lhs->var;
+                    lt->left=expr_lhs2;
+                    lt->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = lt;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::gt)
+                {
+                    auto gt = m_alloc.alloc<NodeBinExprGt>();
+                    expr_lhs2->var = expr_lhs->var;
+                    gt->left=expr_lhs2;
+                    gt->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = gt;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::lte)
+                {
+                    auto lte = m_alloc.alloc<NodeBinExprLte>();
+                    expr_lhs2->var = expr_lhs->var;
+                    lte->left=expr_lhs2;
+                    lte->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = lte;
+                    expr->var = bin_expr;
+                }
+                else if(op.type == TokenType::gte)
+                {
+                    auto gte = m_alloc.alloc<NodeBinExprGte>();
+                    expr_lhs2->var = expr_lhs->var;
+                    gte->left=expr_lhs2;
+                    gte->right=expr_rhs.value();
+                    auto bin_expr = m_alloc.alloc<NodeBinExpr>();
+                    bin_expr->var = gte;
+                    expr->var = bin_expr;
+                }
                 else{
                     std::cerr<<"Unknown binary operator"<<std::endl;
                     exit(EXIT_FAILURE);
@@ -397,48 +484,49 @@ class Parser {
                     std::cerr<<"Invalid scope inside 'maybe'"<<std::endl;
                     exit(EXIT_FAILURE);
                 }
+
+                // Check for elifs (ormaybe)
+                while(auto or_maybe_tok = try_consume(TokenType::ormaybe))
+                {
+                    try_consume(TokenType::open_paren,"Expected '(' after 'ormaybe'");
+                    auto stmt_or_maybe = m_alloc.alloc<NodeStmtOrMaybe>();
+                    if(auto expr = parse_expr())
+                    {
+                        stmt_or_maybe->condition=expr.value();
+                    }else
+                    {
+                        std::cerr<<"Invalid expression inside parentheses"<<std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    try_consume(TokenType::close_paren,"Expected ')' after 'ormaybe'");
+                    if(auto scope = parse_scope())
+                    {
+                        stmt_or_maybe->scope=scope.value();
+                    }
+                    else{
+                        std::cerr<<"Invalid scope inside 'ormaybe'"<<std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    stmt_maybe->elifs.push_back(stmt_or_maybe);
+                }
+
+                // Check for else (moveon)
+                if(auto move_on_tok = try_consume(TokenType::moveon))
+                {
+                    auto stmt_move_on = m_alloc.alloc<NodeStmtMoveOn>();
+                    if(auto scope = parse_scope())
+                    {
+                        stmt_move_on->scope=scope.value();
+                    }
+                    else{
+                        std::cerr<<"Invalid scope inside 'moveon'"<<std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    stmt_maybe->else_stmt = stmt_move_on;
+                }
+
                 auto stmt=m_alloc.alloc<NodeStmt>();
                 stmt->var=stmt_maybe;
-                return *stmt;
-            }
-            else if(auto move_on = try_consume(TokenType::moveon))
-            {
-                auto stmt_move_on = m_alloc.alloc<NodeStmtMoveOn>();
-                if(auto scope = parse_scope())
-                {
-                    stmt_move_on->scope=scope.value();
-                }
-                else{
-                    std::cerr<<"Invalid scope inside 'moveon'"<<std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                auto stmt=m_alloc.alloc<NodeStmt>();
-                stmt->var=stmt_move_on;
-                return *stmt;
-            }
-            else if(auto or_maybe = try_consume(TokenType::ormaybe))
-            {
-                try_consume(TokenType::open_paren,"Expected '(' after 'ormaybe'");
-                auto stmt_or_maybe = m_alloc.alloc<NodeStmtOrMaybe>();
-                if(auto expr = parse_expr())
-                {
-                    stmt_or_maybe->condition=expr.value();
-                }else
-                {
-                    std::cerr<<"Invalid expression inside parentheses"<<std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                try_consume(TokenType::close_paren,"Expected ')' after 'ormaybe'");
-                if(auto scope = parse_scope())
-                {
-                    stmt_or_maybe->scope=scope.value();
-                }
-                else{
-                    std::cerr<<"Invalid scope inside 'ormaybe'"<<std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                auto stmt=m_alloc.alloc<NodeStmt>();
-                stmt->var=stmt_or_maybe;
                 return *stmt;
             }
             else if(auto wait = try_consume(TokenType::wait))

@@ -1,13 +1,82 @@
-hope x = 1;
-maybe(x) {
-    tell_me(88);
+
+secret This is a single line comment. It should be ignored.
+tell_me("=== STARTING COMPREHENSIVE TEST ===");
+
+tell_me("--- 1. Variables and Arithmetic ---");
+hope x = 10;
+hope y = 5;
+tell_me("x (10):");
+tell_me(x);
+tell_me("y (5):");
+tell_me(y);
+
+tell_me("Addition (x + y = 15):");
+tell_me(x + y);
+tell_me("Subtraction (x - y = 5):");
+tell_me(x - y);
+tell_me("Multiplication (x * y = 50):");
+tell_me(x * y);
+tell_me("Division (x / y = 2):");
+tell_me(x / y);
+
+tell_me("--- 2. Logic and Comparisons ---");
+hope a = 10;
+hope b = 20;
+
+maybe(a < b) {
+    tell_me("10 < 20 (True - Correct)");
 }
-hope y = 0;
-maybe(y) {
-    tell_me(77);
+maybe(a > b) {
+    tell_me("10 > 20 (False - Incorrect)");
 }
-wait(x) {
-    tell_me(x);
-    x = x - 1;
+maybe(a == 10) {
+    tell_me("a == 10 (True - Correct)");
 }
+maybe(a != b) {
+    tell_me("a != b (True - Correct)");
+}
+maybe(a <= 10) {
+    tell_me("a <= 10 (True - Correct)");
+}
+maybe(b >= 20) {
+    tell_me("b >= 20 (True - Correct)");
+}
+
+tell_me("--- 3. Control Flow (maybe, ormaybe, moveon) ---");
+hope val = 50;
+
+maybe(val == 10) {
+    tell_me("val is 10 (Incorrect)");
+} ormaybe(val == 50) {
+    tell_me("val is 50 (Correct - ormaybe)");
+} moveon {
+    tell_me("val is else (Incorrect)");
+}
+
+maybe(val == 999) {
+    tell_me("val is 999 (Incorrect)");
+} moveon {
+    tell_me("val is not 999 (Correct - moveon)");
+}
+
+tell_me("--- 4. Loops (wait) ---");
+hope counter = 3;
+wait(counter > 0) {
+    tell_me("Counter:");
+    tell_me(counter);
+    counter = counter - 1;
+}
+tell_me("Loop Finished!");
+
+hide
+This is a multiline comment block.
+It should be completely ignored by the compiler.
+System.exit(1); // dangerous code if not invalid
+hide
+
+tell_me("--- 5. Comments Test ---");
+tell_me("You should not see any errors from the hidden block above.");
+
+tell_me("=== TEST COMPLETE - EXITING ===");
 bye(0);
+tell_me("THIS SHOULD NOT PRINT");
