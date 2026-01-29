@@ -1,0 +1,24 @@
+# Build directories
+build/
+bin/
+
+# Compiled object files
+*.o
+*.obj
+
+# Generated binaries and assembly
+out
+out.asm
+out.o
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+.cmake/
+
+# Editors
+.vscode/
+.idea/
+*.swp
